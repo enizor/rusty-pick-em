@@ -10,6 +10,8 @@ This file will track progress, keep TODO notes, and log the previous work.
 
     Using the official tutorial, pretty easy to setup.
 
+- [ ] Serve the built frontend
+
 - [ ] Setup Diesel: create a table 'game' and implement CRUD operations
 
 - [ ] Setup the API: allow theses CRUD operations to be accessed via Rocket
@@ -22,6 +24,8 @@ This file will track progress, keep TODO notes, and log the previous work.
 
 ## Frontend
 
-- [ ] Create a Hello-world frontpage
+- [X] Create a Hello-world frontpage
+
+    Created with vue-cli
 
 - [ ] Create vue/components for the SQL models
