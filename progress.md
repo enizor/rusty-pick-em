@@ -10,7 +10,9 @@ This file will track progress, keep TODO notes, and log the previous work.
 
     Using the official tutorial, pretty easy to setup.
 
-- [ ] Serve the built frontend
+- [X] Serve the built frontend
+
+    Based on https://thefullsnack.com/en/rust-for-the-web.html
 
 - [ ] Setup Diesel: create a table 'game' and implement CRUD operations
 
