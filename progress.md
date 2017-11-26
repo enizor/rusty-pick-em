@@ -6,7 +6,9 @@ This file will track progress, keep TODO notes, and log the previous work.
 
 ## Backend
 
-- [ ] Setup Rocket: have an 'hello-world'
+- [X] Setup Rocket: have an 'hello-world'
+
+    Using the official tutorial, pretty easy to setup.
 
 - [ ] Setup Diesel: create a table 'game' and implement CRUD operations
 
