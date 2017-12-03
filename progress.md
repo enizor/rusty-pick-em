@@ -10,7 +10,7 @@ This file will track progress, keep TODO notes, and log the previous work.
 
     Using the official tutorial, pretty easy to setup.
 
-- [X] Serve the built frontend
+- [X] Serve the built frontend
 
     Based on https://thefullsnack.com/en/rust-for-the-web.html
 
@@ -19,13 +19,20 @@ This file will track progress, keep TODO notes, and log the previous work.
 
         Adapting the official [Getting Started](http://diesel.rs/guides/getting-started).
 
-        Notes: a column without NOT NULL need to be an Option<>, the timestammp is converted to a chrono::DateTime<Utc>. It works because PSQL returns the UTC version of the timestamp
+        Notes: a column without NOT NULL need to be an Option<>, the timestamp is converted to a chrono::DateTime<Utc>.
+        It works because PSQL returns the UTC version of the timestamp.
 
     - [ ] Implement Create
     - [X] Implement Read
 
         Simple print. Showing the timestamp allows to check the behavior of the timestamps
-    - [ ] Implement Update
+
+    - [X] Implement Update
+
+        update-games.rs will update the timestamp of the first game.
+
+        The timezone handling can be checked easily.
+
     - [ ] Implement Destroy
 
 - [ ] Setup the API: allow theses CRUD operations to be accessed via Rocket
