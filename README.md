@@ -6,5 +6,5 @@ Goals:
 
 - Improve my Rust skills
 
-- Improve frontend skills - it will probably be done using Vue.js
+- Improve frontend skills using Vue.js
 

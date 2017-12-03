@@ -1,0 +1,6 @@
+CREATE TABLE games (
+    id SERIAL PRIMARY KEY,
+    time TIMESTAMP WITH TIME ZONE,
+    score1 INTEGER NOT NULL,
+    score2 INTEGER NOT NULL
+)

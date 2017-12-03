@@ -6,3 +6,7 @@ authors = ["Rémi Garde <remi.garde@free.fr>"]
 [dependencies]
 rocket = "0.3.3"
 rocket_codegen = "0.3.3"
+diesel = { version = "0.99.0", features = ["postgres", "chrono"] }
+diesel_infer_schema = { version = "0.99.0", features = ["postgres"] }
+dotenv = "0.9.0"
+chrono = "0.4.0"
