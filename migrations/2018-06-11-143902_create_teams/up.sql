@@ -1,0 +1,9 @@
+CREATE TABLE teams (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    abbr CHAR(3) NOT NULL,
+    flag VARCHAR(250) NOT NULL
+);
+
+ALTER TABLE games ADD COLUMN team1 INTEGER REFERENCES teams(id),
+ADD team2 INTEGER REFERENCES teams(id)

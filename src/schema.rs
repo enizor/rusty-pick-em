@@ -5,14 +5,17 @@ table! {
         score1 -> Nullable<Int4>,
         score2 -> Nullable<Int4>,
         finished -> Bool,
+        team1 -> Nullable<Int4>,
+        team2 -> Nullable<Int4>,
     }
 }
 
 table! {
     teams (id) {
         id -> Int4,
-        name -> Nullable<Varchar>,
-        abbr -> Nullable<Bpchar>,
+        name -> Varchar,
+        abbr -> Bpchar,
+        flag -> Varchar,
     }
 }
 
