@@ -9,13 +9,13 @@ fn main() {
     use rusty_pick_em::schema::games::dsl::*;
 
     let connection = establish_connection();
-    let results = games.limit(5)
+    let results = games.filter(finished.eq(true)).limit(5)
         .load::<Game>(&connection)
         .expect("Error loading games");
 
     println!("Displaying {} games", results.len());
     for game in results {
-        println!("The score was {}-{}", game.score1, game.score2);
-        println!("It took place the {:?} at {:?}", game.time.unwrap().date(), game.time.unwrap().time() )
+        println!("The score was {}-{}", game.score1.unwrap_or(0), game.score2.unwrap_or(0));
+        println!("It took place the {:?} at {:?}", game.time.date(), game.time.time() )
     }
 }

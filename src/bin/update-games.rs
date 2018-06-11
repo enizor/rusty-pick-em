@@ -21,5 +21,5 @@ fn main() {
         .set(time.eq(new_time))
         .get_result::<Game>(&connection)
         .expect("Unable to update");
-    println!("Game set to {} : {}",game.time.unwrap().date(), game.time.unwrap().time());
+    println!("Game set to {} : {}",game.time.date(), game.time.time());
 }
