@@ -13,8 +13,8 @@ fn main() {
 
     let strtime = args().nth(1).expect("update_game requires a time");
 
-    let new_time = Some(DateTime::<FixedOffset>::parse_from_rfc3339(&strtime)
-    .expect("Please format according to RFC3339").with_timezone(&Utc));
+    let new_time = DateTime::<FixedOffset>::parse_from_rfc3339(&strtime)
+    .expect("Please format according to RFC3339").with_timezone(&Utc);
     let connection = establish_connection();
 
     let game = diesel::update(games.find(1))

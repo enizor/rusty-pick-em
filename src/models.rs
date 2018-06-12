@@ -19,3 +19,13 @@ pub struct Team {
     pub abbr: String,
     pub flag: String,
 }
+
+#[derive(Queryable)]
+pub struct User {
+    pub id: i32,
+    pub name: String,
+    pub passwd: String,
+    pub token: Option<String>,
+    pub tokenExpireAt: Option<DateTime<Utc>>,
+    pub isAdmin: bool
+}

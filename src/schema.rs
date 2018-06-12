@@ -19,7 +19,19 @@ table! {
     }
 }
 
+table! {
+    users (id) {
+        id -> Int4,
+        name -> Varchar,
+        passwd -> Varchar,
+        token -> Nullable<Varchar>,
+        tokenexpireat -> Nullable<Timestamptz>,
+        isadmin -> Bool,
+    }
+}
+
 allow_tables_to_appear_in_same_query!(
     games,
     teams,
+    users,
 );
