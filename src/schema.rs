@@ -1,4 +1,14 @@
 table! {
+    bets (id) {
+        id -> Int4,
+        user_id -> Int4,
+        game_id -> Int4,
+        score1 -> Int4,
+        score2 -> Int4,
+    }
+}
+
+table! {
     games (id) {
         id -> Int4,
         time -> Timestamptz,
@@ -30,7 +40,11 @@ table! {
     }
 }
 
+joinable!(bets -> games (game_id));
+joinable!(bets -> users (user_id));
+
 allow_tables_to_appear_in_same_query!(
+    bets,
     games,
     teams,
     users,

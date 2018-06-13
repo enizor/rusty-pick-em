@@ -1,0 +1,7 @@
+CREATE TABLE bets (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    game_id INTEGER NOT NULL REFERENCES games(id),
+    score1 INTEGER NOT NULL,
+    score2 INTEGER NOT NULL
+)

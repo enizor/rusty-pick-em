@@ -4,19 +4,85 @@
 <head>
     <meta charset="utf-8" />
     <title>Matchs</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css" integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w"
+        crossorigin="anonymous">
+    <!--[if lte IE 8]>
+                    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/grids-responsive-old-ie-min.css">
+                <![endif]-->
+    <!--[if gt IE 8]><!-->
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/grids-responsive-min.css">
+    <!--<![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        .upcoming_game {
+            border: 3px solid;
+            border-radius: 5px;
+            margin: 5px;
+            padding: 5px;
+        }
+
+        .has_bet {
+            border-color: green
+        }
+
+        .no_bet {
+            border-color: royalblue
+        }
+    </style>
 </head>
 
 <body>
+    <header>
+        Vous êtes connecté en tant que {{username}}.
+        <a href="/logout">Logout</a>{{#if flash}}
+        <br> {{flash}} {{/if}}
+    </header>
     <h1>Matchs</h1>
     <div>
         <h3>
-            Matchs précédents
+            Prochains matchs
         </h3>
         {{#each games}}
-        {{this.team1.name}} VS {{this.team2.name}} le {{this.time}}
-        <br>
+        <div class="upcoming_game {{#if this.bet.id}}
+       has_bet {{else}} no_bet {{/if}}">
+            <form class="pure-form pure-form-stacked" action="/games" method="POST">
+                <fieldset>
+                    <legend id="game_time-{{this.id}}"></legend>
+
+                    <div class="pure-g">
+                        <div class="pure-u-2-5">
+                            <label>{{this.team1.name}}
+                                <input class="pure-u-1 pure-u-lg-1-6" type="number" name="score1" value="{{this.bet.score1}}">
+                            </label>
+                        </div>
+
+                        <div class="pure-u-2-5" style="margin: 5px">
+                            <label>{{this.team2.name}}
+                                <input class="pure-u-1 pure-u-lg-1-6" type="number" name="score2" value="{{this.bet.score2}}">
+                            </label>
+                        </div>
+
+                        <div class="pure-u-1 pure-u-sm-1-6">
+                            <button type="submit" class="pure-button pure-button-primary">Submit</button>
+                        </div>
+                    </div>
+                    <input type="hidden" name="game_id" value="{{this.id}}">
+                </fieldset>
+            </form>
+            <script>
+                var jours = ["Dimanche ", "Lundi ", "Mardi ", "Mercredi ", "Jeudi ", "Vendredi ", "Samedi "
+                ];
+                var d = new Date;
+                d.setTime({{ this.time }});
+                d.setTime(d.getTime() - d.getTimezoneOffset() * 60 * 1000);
+                var n = jours[d.getDay()] + d.getDate() + ' à ' + d.getHours() + ':00'
+                document.getElementById("game_time-{{this.id}}").innerHTML = n;
+            </script>
+        </div>
         {{/each}}
     </div>
+
 </body>
 
 </html>
