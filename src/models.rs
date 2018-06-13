@@ -1,4 +1,5 @@
 extern crate chrono;
+
 use self::chrono::{DateTime, Utc};
 
 #[derive(Queryable)]
@@ -12,7 +13,7 @@ pub struct Game {
     pub team2: Option<i32>
 }
 
-#[derive(Queryable)]
+#[derive(Queryable, Serialize)]
 pub struct Team {
     pub id: i32,
     pub name: String,

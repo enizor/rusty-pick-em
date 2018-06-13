@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Matchs</title>
+</head>
+
+<body>
+    <h1>Matchs</h1>
+    <div>
+        <h3>
+            Matchs précédents
+        </h3>
+        {{#each games}}
+        {{this.team1.name}} VS {{this.team2.name}} le {{this.time}}
+        <br>
+        {{/each}}
+    </div>
+</body>
+
+</html>

@@ -2,12 +2,15 @@
 extern crate diesel;
 extern crate dotenv;
 extern crate chrono;
-
+#[macro_use]
+extern crate serde_derive;
 
 pub mod schema;
 pub mod models;
+pub mod games;
 use diesel::prelude::*;
 use diesel::pg::PgConnection;
+use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
 use dotenv::dotenv;
 use chrono::prelude::*;
 use std::env;
@@ -29,7 +32,22 @@ pub fn establish_connection() -> PgConnection {
         .expect(&format!("Error connecting to {}", database_url))
 }
 
-pub fn check_token(given_token: String, connection: PgConnection) -> Result<(User), AuthError> {
+// An alias to the type for a pool of Diesel Pg connections.
+pub type PgPool = Pool<ConnectionManager<PgConnection>>;
+
+/// Initializes a database pool.
+pub fn init_pool() -> PgPool {
+    dotenv().ok();
+
+    let database_url = env::var("DATABASE_URL")
+        .expect("DATABASE_URL must be set");
+
+    let manager = ConnectionManager::<PgConnection>::new(database_url);
+    Pool::new(manager).expect("db pool")
+}
+
+
+pub fn get_seesion(given_token: String, connection: PgConnection) -> Result<(User), AuthError> {
     use schema::users::dsl::*;
 
     let user: User = users.filter(token.eq(&given_token)).first(&connection)
