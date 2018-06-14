@@ -5,6 +5,7 @@ extern crate serde;
 
 use self::diesel::prelude::*;
 use models::{Game, Team, Bet};
+use chrono::prelude::*;
 use chrono::{DateTime, Utc};
 use diesel::pg::PgConnection;
 
@@ -63,7 +64,6 @@ impl Game {
             })
         }
 
-
         GameContext {
             id: self.id,
             time: self.time.timestamp_millis(),
@@ -76,9 +76,10 @@ impl Game {
     }
 }
 
-pub fn upcoming_games(conn: &PgConnection, number: i32, offset: i32, user: i32) -> Vec<GameContext> {
+pub fn upcoming_games(conn: &PgConnection, number: i64, offset: i32, user: i32) -> Vec<GameContext> {
     use schema::games::dsl::{games, time};
-    games.order(time.asc()).limit(5).load::<Game>(conn)
+    games.filter(time.gt(Local::now()))
+        .order(time.asc()).limit(number).load::<Game>(conn)
         .expect("Unable to find next games")
         .iter().map(|game| game.to_context(user, conn)).collect()
 }

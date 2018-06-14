@@ -25,6 +25,7 @@ use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
 use std::ops::Deref;
+use chrono::prelude::*;
 
 use std::fs::File;
 use std::path::{Path, PathBuf};
@@ -115,7 +116,7 @@ fn games(
                     .map(|msg| msg.msg().to_string())
                     .unwrap_or("".to_string()),
                 username: user.name,
-                games: upcoming_games(&*conn, 5, 0, user.id),
+                games: upcoming_games(&*conn, 15, 0, user.id),
             };
             return Ok(Template::render("games", &context));
         }
@@ -138,26 +139,31 @@ fn postbet(bet: Form<PlaceBet>, conn: DbConn, mut cookies: Cookies) -> Flash<Red
     if let Some(ref cookie) = cookies.get_private("token") {
         if let Ok(user) = get_session(cookie.value(), &*conn) {
             // Update if exists
-            use self::schema::bets::dsl::*;
-            let result = diesel::update(
-                bets.filter(game_id.eq(&bet.get().game_id))
-                    .filter(user_id.eq(user.id)),
-            ).set((score1.eq(&bet.get().score1), score2.eq(&bet.get().score2)))
-                .get_result::<Bet>(&*conn);
+            use self::schema::games::dsl::*;
+            if games.filter(time.gt(Local::now()))
+            .find(&bet.get().game_id).first::<Game>(&*conn).is_ok() {
 
-            if result.is_err() {
-                diesel::insert_into(bets)
-                .values((
-                    user_id.eq(user.id),
-                    game_id.eq(&bet.get().game_id),
-                    score1.eq(&bet.get().score1),
-                    score2.eq(&bet.get().score2)
-                ))
-                .execute(&*conn)
-                .expect("Error saving new post");
+                use self::schema::bets::dsl::*;
+                let result = diesel::update(
+                    bets.filter(game_id.eq(&bet.get().game_id))
+                        .filter(user_id.eq(user.id)),
+                ).set((score1.eq(&bet.get().score1), score2.eq(&bet.get().score2)))
+                    .get_result::<Bet>(&*conn);
+
+                // Else insert the bet
+                if result.is_err() {
+                    diesel::insert_into(bets)
+                    .values((
+                        user_id.eq(user.id),
+                        game_id.eq(&bet.get().game_id),
+                        score1.eq(&bet.get().score1),
+                        score2.eq(&bet.get().score2)
+                    ))
+                    .execute(&*conn)
+                    .expect("Error saving new post");
+                }
+                return Flash::success(Redirect::to("/games"), "Pari enregistré");
             }
-            // Else insert the bet
-            return Flash::success(Redirect::to("/games"), "Pari enregistré");
         }
     }
     Flash::error(
