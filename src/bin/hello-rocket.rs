@@ -69,18 +69,17 @@ fn authUser(auth_user: Form<AuthUser>, mut cookies: Cookies, conn: DbConn) -> Fl
 }
 
 #[get("/logout")]
-fn logout(mut cookies: Cookies, conn: DbConn) -> Result<&'static str, Flash<Redirect>> {
+fn logout(mut cookies: Cookies, conn: DbConn) -> Flash<Redirect> {
     if let Some(ref cookie) = cookies.get_private("token") {
         if let Ok(user) = get_session(cookie.value(), &*conn) {
             delete_session(&user.name, &*conn);
             cookies.remove_private(Cookie::named("token"));
-            return Ok("You successfully logged out");
+            return Flash::success(Redirect::to("/login"), "Vous avez bien été déconnnecté");
         }
     }
-    Err(Flash::error(
+    Flash::error(
         Redirect::to("/login"),
-        "Votre session a expiré. Merci de vous authentifier.",
-    ))
+        "Votre session a expiré. Merci de vous authentifier.")
 }
 
 #[get("/test")]
