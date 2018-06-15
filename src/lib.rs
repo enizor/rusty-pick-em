@@ -51,22 +51,24 @@ pub fn init_pool() -> PgPool {
 pub fn get_session(given_token: &str, conn: &PgConnection) -> Result<(User), AuthError> {
     use schema::users::dsl::*;
 
-    let user: User = users.filter(token.eq(&given_token)).first(conn)
-        .expect("AuthError loading user while checking token");
-    if user.token.is_some() && user.tokenExpireAt.is_some() {
-        if user.token.as_ref().unwrap() == &given_token {
-            if user.tokenExpireAt.unwrap() > Utc::now() {
-                Ok(user)
+    if let Ok(user) = users.filter(token.eq(&given_token)).first::<User>(conn) {
+        if user.token.is_some() && user.tokenExpireAt.is_some() {
+            if user.token.as_ref().unwrap() == &given_token {
+                if user.tokenExpireAt.unwrap() > Utc::now() {
+                    Ok(user)
+                } else {
+                    println!("token expired");
+                    Err(AuthError::TokenExpired)
+                }
             } else {
-                println!("token expired");
-                Err(AuthError::TokenExpired)
+                    println!("wrong token");
+                Err(AuthError::WrongToken)
             }
         } else {
-                println!("wrong token");
-            Err(AuthError::WrongToken)
+            println!("No token");
+            Err(AuthError::NoToken)
         }
     } else {
-        println!("No token");
         Err(AuthError::NoToken)
     }
 }
