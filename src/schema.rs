@@ -5,6 +5,7 @@ table! {
         game_id -> Int4,
         score1 -> Int4,
         score2 -> Int4,
+        points -> Int4,
     }
 }
 

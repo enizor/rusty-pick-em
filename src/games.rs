@@ -60,7 +60,8 @@ impl Game {
                 user_id: 0,
                 game_id: 0,
                 score1: 0,
-                score2: 0
+                score2: 0,
+                points: 0
             })
         }
 

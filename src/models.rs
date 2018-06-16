@@ -38,5 +38,6 @@ pub struct Bet {
     pub user_id: i32,
     pub game_id: i32,
     pub score1: i32,
-    pub score2: i32
+    pub score2: i32,
+    pub points: i32
 }
