@@ -37,6 +37,7 @@ table! {
         token -> Nullable<Varchar>,
         tokenexpireat -> Nullable<Timestamptz>,
         isadmin -> Bool,
+        points -> Int4,
     }
 }
 

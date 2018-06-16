@@ -28,7 +28,8 @@ pub struct User {
     pub passwd: String,
     pub token: Option<String>,
     pub tokenExpireAt: Option<DateTime<Utc>>,
-    pub isAdmin: bool
+    pub isAdmin: bool,
+    pub points: i32
 }
 
 #[derive(Queryable, Serialize)]
