@@ -6,7 +6,7 @@ extern crate serde;
 use self::diesel::prelude::*;
 use models::{Game, Team, Bet, User};
 use chrono::prelude::*;
-use chrono::{Utc};
+use chrono::{Utc, Date};
 use diesel::pg::PgConnection;
 
 #[derive(Serialize)]
@@ -153,10 +153,11 @@ impl Game {
     }
 }
 
-pub fn upcoming_games(conn: &PgConnection, number: i64, offset: i32, user: i32) -> Vec<GameDetails> {
+pub fn upcoming_games(conn: &PgConnection, date: NaiveDate, user: i32) -> Vec<GameDetails> {
     use schema::games::dsl::{games, time};
-    games.filter(time.gt(Local::now()))
-        .order(time.asc()).limit(number).load::<Game>(conn)
+    use diesel::dsl::sql;
+    games.filter(sql(&format!("date(time) = '{}'", date.format("%Y-%m-%d"))))
+        .order(time.asc()).limit(10).load::<Game>(conn)
         .expect("Unable to find next games")
         .iter().map(|game| game.to_context(user, conn)).collect()
 }

@@ -10,6 +10,7 @@ extern crate diesel;
 extern crate serde_derive;
 extern crate chrono;
 extern crate rusty_pick_em;
+extern crate time;
 
 use rocket::http::{Cookie, Cookies, Status};
 use rocket::request::{self, FlashMessage, Form, FromRequest};
@@ -26,6 +27,8 @@ use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
 use std::ops::Deref;
 use chrono::prelude::*;
+
+use time::Duration;
 
 use std::fs::File;
 use std::path::{Path, PathBuf};
@@ -97,9 +100,45 @@ fn test(mut cookies: Cookies, conn: DbConn) -> Result<&'static str, Flash<Redire
 
 #[derive(Serialize)]
 struct GamesContext {
+    next_day: String,
+    previous_day: String,
     flash: String,
     username: String,
     games: Vec<GameDetails>,
+}
+
+#[derive(FromForm)]
+struct CustomDate {
+    date: Option<String>
+}
+#[get("/games?<date>")]
+fn games_with_date(
+    date: CustomDate,
+    conn: DbConn,
+    flash: Option<FlashMessage>,
+    mut cookies: Cookies,
+) -> Result<Template, Flash<Redirect>> {
+    if let Some(ref cookie) = cookies.get_private("token") {
+        if let Ok(user) = get_session(cookie.value(), &*conn) {
+            let parsed_date = NaiveDate::parse_from_str(&date.date.unwrap_or("LOL NOPE".to_string()), "%Y-%m-%d").unwrap_or(Local::today().naive_local());
+            let context = GamesContext {
+                next_day: parsed_date.checked_add_signed(Duration::days(1))
+                .unwrap().format("%Y-%m-%d").to_string(),
+                previous_day: parsed_date.checked_sub_signed(Duration::days(1))
+                .unwrap().format("%Y-%m-%d").to_string(),
+                flash: flash
+                    .map(|msg| msg.msg().to_string())
+                    .unwrap_or("".to_string()),
+                username: user.name,
+                games: upcoming_games(&*conn, parsed_date, user.id),
+            };
+            return Ok(Template::render("games", &context));
+        }
+    }
+    Err(Flash::error(
+        Redirect::to("/login"),
+        "Vous avez été déconnecté. Merci de vous authentifier.",
+    ))
 }
 
 #[get("/games")]
@@ -110,12 +149,17 @@ fn games(
 ) -> Result<Template, Flash<Redirect>> {
     if let Some(ref cookie) = cookies.get_private("token") {
         if let Ok(user) = get_session(cookie.value(), &*conn) {
+            let parsed_date = Local::today().naive_local();
             let context = GamesContext {
+                next_day: parsed_date.checked_add_signed(Duration::days(1))
+                .unwrap().format("%Y-%m-%d").to_string(),
+                previous_day: parsed_date.checked_sub_signed(Duration::days(1))
+                .unwrap().format("%Y-%m-%d").to_string(),
                 flash: flash
                     .map(|msg| msg.msg().to_string())
                     .unwrap_or("".to_string()),
                 username: user.name,
-                games: upcoming_games(&*conn, 15, 0, user.id),
+                games: upcoming_games(&*conn, Local::today().naive_local(), user.id),
             };
             return Ok(Template::render("games", &context));
         }
@@ -241,7 +285,7 @@ fn main() {
     rocket::ignite()
         .mount(
             "/",
-            routes![index, login, authUser, logout, test, games, postbet, game_detail, postresult],
+            routes![index, login, authUser, logout, test, games, games_with_date, postbet, game_detail, postresult],
         )
         .attach(Template::fairing())
         .manage(init_pool())

@@ -15,7 +15,7 @@
     <!--<![endif]-->
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        .upcoming_game {
+        .game {
             border: 3px solid;
             border-radius: 5px;
             margin-top: 10px;
@@ -27,6 +27,10 @@
 
         .no_bet {
             border-color: rgb(223, 117, 20)
+        }
+
+        .started {
+            border-color: grey
         }
 
         .button-success,
@@ -76,12 +80,22 @@
     </header>
     <h1>Matchs</h1>
     <div style="max-width:768px;margin:auto">
-        <h3>
-            Prochains matchs
-        </h3>
-        {{#each games}}
-        <div class="pure-g upcoming_game {{#if this.bet.id}}
-       has_bet {{else}} no_bet {{/if}}">
+        <div class="pure-g">
+            <a id="button-previous" href="/games?date={{previous_day}}" class="pure-button pure-u-3-5 pure-u-sm-1-3" style="margin: auto">
+                Jour précédent
+            </a>
+            <form class="pure-u-1 pure-u-sm-1-3 pure-form pure-form-stacked" action="/games" method="GET">
+                <label>Date:
+                    <input style="margin: auto" type="date" name="date">
+                </label>
+                <button type="submit" class="pure-button" style="margin-bottom:10px">Go!</button>
+            </form>
+            <a id="button-next" href="/games?date={{next_day}}" class="pure-button pure-u-3-5 pure-u-sm-1-3" style="margin: auto">
+                Jour suivant
+            </a>
+        </div>
+        <br> {{#each games}}
+        <div class="pure-g game{{#if this.started}} started {{else}} {{#if this.bet.id}} has_bet {{else}} no_bet {{/if}}{{/if}}">
             <div id="game_time-{{this.id}}" class="pure-u-1" style="border-bottom: 1px solid #e5e5e5;margin-bottom: .3em">
             </div>
             <img src="{{this.team1.flag}}" alt="{{this.team1.name}}" class="pure-u-5-12 pure-u-sm-1-5 flag">
@@ -92,8 +106,7 @@
                 {{/if}}
             </div>
             <div class="pure-u-1 pure-u-sm-1-8">
-                <a href="/game/{{this.id}}" class="pure-button button-{{#if this.bet.id}}success{{else}}warning{{/if}}"
-                    style="margin-top: auto;margin-bottom: auto;">
+                <a href="/game/{{this.id}}" class="pure-button button-{{#if this.bet.id}}success{{else}}warning{{/if}}" style="margin-top: auto;margin-bottom: auto;">
                     Parier !
                 </a>
                 <p style="text-align: center">Pari</p>
@@ -110,7 +123,7 @@
                 var d = new Date;
                 d.setTime({{ this.time }});
                 var n = jours[d.getDay()] + d.getDate() + ' à ' + d.getHours() + ':00'
-                document.getElementById("game_time-{{this.id}}").innerHTML = n;
+                document.getElementById("game_time-{{ this.id }}").innerHTML = n;
             </script>
         </div>
         {{/each}}
