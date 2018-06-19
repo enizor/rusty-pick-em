@@ -176,6 +176,7 @@ struct GameContext {
     flash: String,
     username: String,
     game: GameDetails,
+    admin: bool
 }
 
 #[get("/game/<id>")]
@@ -190,6 +191,7 @@ fn game_detail(id: i32, conn: DbConn, flash: Option<FlashMessage>, mut cookies: 
                         .unwrap_or("".to_string()),
                     username: user.name,
                     game: game.to_context(user.id, &*conn),
+                    admin: user.isAdmin
                 };
                 return Ok(Template::render("game", &context));
             }
@@ -201,13 +203,45 @@ fn game_detail(id: i32, conn: DbConn, flash: Option<FlashMessage>, mut cookies: 
     ))
 }
 
-// /* check cookie
+#[derive(FromForm, Serialize)]
+struct PostResults {
+    game_id: i32,
+    score1: i32,
+    score2: i32,
+}
+
+#[post("/result", data = "<res>")]
+fn postresult(res: Form<PostResults>, conn: DbConn, mut cookies: Cookies) -> Flash<Redirect> {
+    if let Some(ref cookie) = cookies.get_private("token") {
+        if let Ok(user) = get_session(cookie.value(), &*conn) {
+            if user.isAdmin {
+                // Update if exists
+                use self::schema::games::dsl::*;
+                if let Ok(game) = games.find(&res.get().game_id).first::<Game>(&*conn) {
+
+                    let result = diesel::update(
+                        games.filter(id.eq(game.id))
+                    ).set((score1.eq(&res.get().score1), score2.eq(&res.get().score2)))
+                    .get_result::<Game>(&*conn)
+                    .expect("Error setting game result");
+
+                    result.update_bets(&conn);
+                    return Flash::success(Redirect::to("/games"), "Résultat enregistré");
+                }
+            }
+        }
+    }
+    Flash::error(
+        Redirect::to("/login"),
+        "Votre session a expiré. Merci de vous authentifier.",
+    )
+}
 
 fn main() {
     rocket::ignite()
         .mount(
             "/",
-            routes![index, login, authUser, logout, test, games, postbet, game_detail],
+            routes![index, login, authUser, logout, test, games, postbet, game_detail, postresult],
         )
         .attach(Template::fairing())
         .manage(init_pool())
