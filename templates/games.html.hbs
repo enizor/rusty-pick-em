@@ -18,61 +18,92 @@
         .upcoming_game {
             border: 3px solid;
             border-radius: 5px;
-            margin: 5px;
-            padding: 5px;
+            margin-top: 10px;
         }
 
         .has_bet {
-            border-color: green
+            border-color: rgb(28, 184, 65)
         }
 
         .no_bet {
-            border-color: royalblue
+            border-color: rgb(223, 117, 20)
+        }
+
+        .button-success,
+        .button-error,
+        .button-warning,
+        .button-secondary {
+            color: white;
+            border-radius: 4px;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+        }
+
+        .button-success {
+            background: rgb(28, 184, 65);
+            /* this is a green */
+        }
+
+        .button-error {
+            background: rgb(202, 60, 60);
+            /* this is a maroon */
+        }
+
+        .button-warning {
+            background: rgb(223, 117, 20);
+            /* this is an orange */
+        }
+
+        .button-secondary {
+            background: rgb(66, 184, 221);
+            /* this is a light blue */
+        }
+
+        .flag {
+            border: 1px solid #a5a5a5;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            margin-left: auto;
+            margin-right: auto;
         }
     </style>
 </head>
 
-<body>
+<body style="text-align:center;">
     <header>
         Vous êtes connecté en tant que {{username}}.
         <a href="/logout">Logout</a>{{#if flash}}
         <br> {{flash}} {{/if}}
     </header>
     <h1>Matchs</h1>
-    <div>
+    <div style="max-width:768px;margin:auto">
         <h3>
             Prochains matchs
         </h3>
         {{#each games}}
-        <div class="upcoming_game {{#if this.bet.id}}
+        <div class="pure-g upcoming_game {{#if this.bet.id}}
        has_bet {{else}} no_bet {{/if}}">
-            <form class="pure-form pure-form-stacked" action="/games" method="POST">
-                <fieldset>
-                    <legend id="game_time-{{this.id}}"></legend>
-
-                    <div class="pure-g">
-                        <div class="pure-u-2-5">
-                            <label>{{this.team1.name}}
-                                <input class="pure-u-1 pure-u-lg-1-6" type="number" name="score1" value="{{this.bet.score1}}">
-                            </label>
-                        </div>
-
-                        <div class="pure-u-2-5" style="margin: 5px">
-                            <label>{{this.team2.name}}
-                                <input class="pure-u-1 pure-u-lg-1-6" type="number" name="score2" value="{{this.bet.score2}}">
-                            </label>
-                        </div>
-
-                        <div class="pure-u-1 pure-u-sm-1-6">
-                            <button type="submit" class="pure-button pure-button-primary">Submit</button>
-                        </div>
-                    </div>
-                    <input type="hidden" name="game_id" value="{{this.id}}">
-                </fieldset>
-            </form>
+            <div id="game_time-{{this.id}}" class="pure-u-1" style="border-bottom: 1px solid #e5e5e5;margin-bottom: .3em">
+            </div>
+            <img src="{{this.team1.flag}}" alt="{{this.team1.name}}" class="pure-u-5-12 pure-u-sm-1-5 flag">
+            <div class="pure-u-5-12 pure-u-sm-1-5">
+                <p>{{this.team1.name}}</p>
+                {{#if this.bet.id}}
+                <p>{{this.bet.score1}}</p>
+                {{/if}}
+            </div>
+            <a href="/games/{{this.game.id}}" class="pure-u-1 pure-u-sm-1-8 pure-button button-{{#if this.bet.id}}success{{else}}warning{{/if}}"
+                style="margin-top: auto;margin-bottom: auto;margin-left: 15px;margin-right: 15px;">
+                Parier !
+            </a>
+            <div class="pure-u-5-12 pure-u-sm-1-5">
+                <p>{{this.team2.name}}</p>
+                {{#if this.bet.id}}
+                <p>{{this.bet.score2}}</p>
+                {{/if}}
+            </div>
+            <img src="{{this.team2.flag}}" alt="{{this.team2.name}}" class="pure-u-5-12 pure-u-sm-1-5 flag" />
             <script>
-                var jours = ["Dimanche ", "Lundi ", "Mardi ", "Mercredi ", "Jeudi ", "Vendredi ", "Samedi "
-                ];
+                var jours = ["Dimanche ", "Lundi ", "Mardi ", "Mercredi ", "Jeudi ", "Vendredi ", "Samedi "];
                 var d = new Date;
                 d.setTime({{ this.time }});
                 var n = jours[d.getDay()] + d.getDate() + ' à ' + d.getHours() + ':00'
