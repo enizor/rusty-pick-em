@@ -67,8 +67,11 @@
 <body style="text-align:center;">
     <header>
         Vous êtes connecté en tant que {{username}}.
-        <a href="/logout">Logout</a>{{#if flash}}
+        <a href="/logout">Logout</a>
+        {{#if flash}}
         <br> {{flash}} {{/if}}
+        <br>
+        <a href="/games">Retour à la liste des matchs</a>
     </header>
     <h1>Match</h1>
     <div style="max-width:768px;margin:auto">
