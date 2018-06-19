@@ -99,7 +99,7 @@ fn test(mut cookies: Cookies, conn: DbConn) -> Result<&'static str, Flash<Redire
 struct GamesContext {
     flash: String,
     username: String,
-    games: Vec<GameContext>,
+    games: Vec<GameDetails>,
 }
 
 #[get("/games")]
@@ -171,13 +171,43 @@ fn postbet(bet: Form<PlaceBet>, conn: DbConn, mut cookies: Cookies) -> Flash<Red
     )
 }
 
+#[derive(Serialize)]
+struct GameContext {
+    flash: String,
+    username: String,
+    game: GameDetails,
+}
+
+#[get("/game/<id>")]
+fn game_detail(id: i32, conn: DbConn, flash: Option<FlashMessage>, mut cookies: Cookies )
+-> Result<Template, Flash<Redirect>> {
+    if let Some(ref cookie) = cookies.get_private("token") {
+        if let Ok(user) = get_session(cookie.value(), &*conn) {
+            if let Some(game) = get_game(id, &*conn) {
+                let context = GameContext {
+                    flash: flash
+                        .map(|msg| msg.msg().to_string())
+                        .unwrap_or("".to_string()),
+                    username: user.name,
+                    game: game.to_context(user.id, &*conn),
+                };
+                return Ok(Template::render("game", &context));
+            }
+        }
+    }
+    Err(Flash::error(
+        Redirect::to("/login"),
+        "Vous avez été déconnecté. Merci de vous authentifier.",
+    ))
+}
+
 // /* check cookie
 
 fn main() {
     rocket::ignite()
         .mount(
             "/",
-            routes![index, login, authUser, logout, test, games, postbet],
+            routes![index, login, authUser, logout, test, games, postbet, game_detail],
         )
         .attach(Template::fairing())
         .manage(init_pool())

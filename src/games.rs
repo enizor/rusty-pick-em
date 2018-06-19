@@ -10,18 +10,30 @@ use chrono::{DateTime, Utc};
 use diesel::pg::PgConnection;
 
 #[derive(Serialize)]
-pub struct GameContext {
+pub struct GameDetails {
     pub id: i32,
     pub time: i64,
     pub score1: i32,
     pub score2: i32,
     pub team1: Team,
     pub team2: Team,
-    pub bet: Bet
+    pub bet: Bet, // bet from the concerned user
+    pub finished: bool,
+    pub started: bool,
+    pub bets: Vec<BetDetails> // ordered by total points per user
+}
+
+#[derive(Queryable, Serialize)]
+pub struct BetDetails {
+    pub username: String,
+    pub score1: i32,
+    pub score2: i32,
+    pub bet_points: i32,
+    pub user_points: i32
 }
 
 impl Game {
-    pub fn to_context(&self, user: i32, conn: &PgConnection) -> GameContext {
+    pub fn to_context(&self, user: i32, conn: &PgConnection) -> GameDetails {
 
         use schema::teams::dsl::teams;
         let team1 = if self.team1.is_some() {
@@ -49,7 +61,7 @@ impl Game {
                 }
             };
 
-        use schema::bets::dsl::{bets, game_id, user_id};
+        use schema::bets::dsl::*;
         let mut bet = bets.filter(game_id.eq(self.id))
         .filter(user_id.eq(user))
         .first::<Bet>(conn);
@@ -65,22 +77,46 @@ impl Game {
             })
         }
 
-        GameContext {
+        use schema::users;
+        let bets_vec = bets.filter(game_id.eq(self.id))
+        .inner_join(users::dsl::users)
+        .select((users::dsl::name, score1, score2, points, users::dsl::points))
+        .order(users::dsl::points.desc())
+        .load::<BetDetails>(conn).expect("unable to load bets");
+
+        GameDetails {
             id: self.id,
             time: self.time.timestamp_millis(),
             score1: self.score1.unwrap_or(0),
             score2: self.score2.unwrap_or(0),
             team1: team1,
             team2: team2,
+            finished: self.is_finished(),
+            started: self.is_started(),
+            bets: bets_vec,
             bet: bet.expect("should NOT happen ")
         }
     }
+
+    fn is_finished(&self) -> bool {
+        self.score1.is_some()
+    }
+
+    fn is_started(&self) -> bool {
+        self.time < Utc::now()
+    }
 }
 
-pub fn upcoming_games(conn: &PgConnection, number: i64, offset: i32, user: i32) -> Vec<GameContext> {
+pub fn upcoming_games(conn: &PgConnection, number: i64, offset: i32, user: i32) -> Vec<GameDetails> {
     use schema::games::dsl::{games, time};
     games.filter(time.gt(Local::now()))
         .order(time.asc()).limit(number).load::<Game>(conn)
         .expect("Unable to find next games")
         .iter().map(|game| game.to_context(user, conn)).collect()
+}
+
+pub fn get_game(id: i32, conn: &PgConnection) -> Option<Game> {
+    use schema::games::dsl::{games};
+    games.find(id)
+        .first::<Game>(conn).ok()
 }

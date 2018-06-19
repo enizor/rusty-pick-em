@@ -91,10 +91,13 @@
                 <p>{{this.bet.score1}}</p>
                 {{/if}}
             </div>
-            <a href="/games/{{this.id}}" class="pure-u-1 pure-u-sm-1-8 pure-button button-{{#if this.bet.id}}success{{else}}warning{{/if}}"
-                style="margin-top: auto;margin-bottom: auto;margin-left: 15px;margin-right: 15px;">
-                Parier !
-            </a>
+            <div class="pure-u-1 pure-u-sm-1-8">
+                <a href="/game/{{this.id}}" class="pure-button button-{{#if this.bet.id}}success{{else}}warning{{/if}}"
+                    style="margin-top: auto;margin-bottom: auto;">
+                    Parier !
+                </a>
+                <p style="text-align: center">Pari</p>
+            </div>
             <div class="pure-u-5-12 pure-u-sm-1-5">
                 <p>{{this.team2.name}}</p>
                 {{#if this.bet.id}}

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Matchs</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css" integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w"
+        crossorigin="anonymous">
+    <!--[if lte IE 8]>
+                    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/grids-responsive-old-ie-min.css">
+                <![endif]-->
+    <!--[if gt IE 8]><!-->
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/grids-responsive-min.css">
+    <!--<![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        .upcoming_game {
+            border: 3px solid;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .has_bet {
+            border-color: rgb(28, 184, 65)
+        }
+
+        .no_bet {
+            border-color: rgb(223, 117, 20)
+        }
+
+        .button-success,
+        .button-error,
+        .button-warning,
+        .button-secondary {
+            color: white;
+            border-radius: 4px;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+        }
+
+        .button-success {
+            background: rgb(28, 184, 65);
+            /* this is a green */
+        }
+
+        .button-error {
+            background: rgb(202, 60, 60);
+            /* this is a maroon */
+        }
+
+        .button-warning {
+            background: rgb(223, 117, 20);
+            /* this is an orange */
+        }
+
+        .button-secondary {
+            background: rgb(66, 184, 221);
+            /* this is a light blue */
+        }
+
+        .flag {
+            border: 1px solid #a5a5a5;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+</head>
+
+<body style="text-align:center;">
+    <header>
+        Vous êtes connecté en tant que {{username}}.
+        <a href="/logout">Logout</a>{{#if flash}}
+        <br> {{flash}} {{/if}}
+    </header>
+    <h1>Match</h1>
+    <div style="max-width:768px;margin:auto">
+        {{#if game.started}}
+        {{else}}
+        <form class="pure-form pure-form-stacked" action="/games" method="POST">
+        {{/if}}
+            <div class="pure-g upcoming_game {{#if game.bet.id}}
+                has_bet {{else}} no_bet {{/if}}">
+                <div id="game_time-{{game.id}}" class="pure-u-1" style="border-bottom: 1px solid #e5e5e5;margin-bottom: .3em">
+                </div>
+                <img src="{{game.team1.flag}}" alt="{{game.team1.name}}" class="pure-u-5-12 pure-u-sm-1-5 flag">
+                <div class="pure-u-5-12 pure-u-sm-1-5">
+                    <p>{{game.team1.name}}</p>
+                    {{#if game.finished}}
+                    <p>{{game.score1}}</p>
+                    {{/if}}
+                    <input style="margin: auto" class="pure-u-5-12" type="number" name="score1" value="{{game.bet.score1}}" {{#if game.started}}disabled{{/if}}>
+                </div>
+                <div class="pure-u-1 pure-u-sm-1-8">
+                    {{#if game.started}}
+                    <p></p>
+                    {{else}}
+                    <div class="pure-u-1 pure-u-sm-1-8">
+                        <button type="submit" class="pure-button pure-button-primary">Submit</button>
+                    </div>
+                    <input type="hidden" name="game_id" value="{{game.id}}">
+                    {{/if}}
+                    {{#if game.finished}}
+                    <p style="text-align: center">Résultat</p>
+                    {{/if}}
+                    <p style="text-align: center">Pari</p>
+                </div>
+                <div class="pure-u-5-12 pure-u-sm-1-5">
+                    <p>{{game.team2.name}}</p>
+                    {{#if game.finished}}
+                    <p>{{game.score2}}</p>
+                    {{/if}}
+                    <input style="margin: auto" class="pure-u-5-12" type="number" name="score2" value="{{game.bet.score2}}" {{#if game.started}}disabled{{/if}}>
+                </div>
+                <img src="{{game.team2.flag}}" alt="{{game.team2.name}}" class="pure-u-5-12 pure-u-sm-1-5 flag" />
+                <script>
+                    var jours = ["Dimanche ", "Lundi ", "Mardi ", "Mercredi ", "Jeudi ", "Vendredi ", "Samedi "];
+                    var d = new Date;
+                    d.setTime({{ game.time }});
+                    var n = jours[d.getDay()] + d.getDate() + ' à ' + d.getHours() + ':00'
+                    document.getElementById("game_time-{{game.id}}").innerHTML = n;
+                </script>
+            </div>
+        {{#if game.started}}
+        {{else}}
+        </form>
+        {{/if}}
+    </div>
+
+</body>
+
+</html>
