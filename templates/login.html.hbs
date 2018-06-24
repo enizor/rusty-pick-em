@@ -4,20 +4,31 @@
 <head>
     <meta charset="utf-8" />
     <title>Login</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css" integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w"
+        crossorigin="anonymous">
+    <!--[if lte IE 8]>
+                            <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/grids-responsive-old-ie-min.css">
+                        <![endif]-->
+    <!--[if gt IE 8]><!-->
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/grids-responsive-min.css">
+    <!--<![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
 </head>
 
-<body>
-    <h1>{{flash}}</h1>
-    <form action="/login" method="POST">
-        First name:
-        <br>
-        <input type="text" name="name" value="" autofocus>
-        <br> Password:
-        <br>
-        <input type="password" name="password" value="">
-        <br>
-        <br>
-        <input type="submit" value="Submit">
+<body style="text-align:center;">
+    <h1>Login</h1>
+    <form class="pure-form" style="max-width:768px;margin:auto">
+        <fieldset>
+            <legend>{{flash}}</legend>
+
+            <input type="text" placeholder="Username"> {{!--
+            <input type="password" placeholder="Password"> --}}
+            <br>
+            <br>
+            <button type="submit" class="pure-button pure-button-primary">Submit</button>
+        </fieldset>
     </form>
 </body>
 
