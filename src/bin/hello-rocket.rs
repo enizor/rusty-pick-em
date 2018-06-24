@@ -220,7 +220,8 @@ struct GameContext {
     flash: String,
     username: String,
     game: GameDetails,
-    admin: bool
+    admin: bool,
+    day: String,
 }
 
 #[get("/game/<id>")]
@@ -235,7 +236,8 @@ fn game_detail(id: i32, conn: DbConn, flash: Option<FlashMessage>, mut cookies: 
                         .unwrap_or("".to_string()),
                     username: user.name,
                     game: game.to_context(user.id, &*conn),
-                    admin: user.isAdmin
+                    admin: user.isAdmin,
+                    day: game.time.format("%Y-%m-%d").to_string()
                 };
                 return Ok(Template::render("game", &context));
             }
