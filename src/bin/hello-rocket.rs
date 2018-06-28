@@ -198,7 +198,7 @@ fn postbet(bet: Form<PlaceBet>, conn: DbConn, mut cookies: Cookies) -> Flash<Red
                     .execute(&*conn)
                     .expect("Error saving new post");
                 }
-                return Flash::success(Redirect::to("/games"), "Pari enregistré");
+                return Flash::success(Redirect::to(&format!("/game/{}", &bet.get().game_id)), "Pari enregistré");
             }
         }
     }
