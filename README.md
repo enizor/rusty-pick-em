@@ -6,6 +6,6 @@ Goals:
 
 - Improve my Rust skills
 
-- Improve frontend skills using Vue.js
+- Improve frontend skills using ~~Vue.js~~ Handlebars templating will do the job quicker considering the scope of the project.
 
 Nightly Rustc problems: `rustc 1.28.0-nightly (2a0062974 2018-06-09` should work for both Diesel and Rocket

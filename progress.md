@@ -35,13 +35,15 @@ This file will track progress, keep TODO notes, and log the previous work.
 
     - [ ] Implement Destroy
 
-- [ ] Setup the API: allow theses CRUD operations to be accessed via Rocket
+- [X] Setup the API: allow theses CRUD operations to be accessed via Rocket
+    API abandoned in favor of static templates
 
-- [ ] Define the SQL shema and create it
+- [X] Define the SQL shema and create it
 
-- [ ] Define the API and document it
+- [X] Define the API and document it
+    No API
 
-- [ ] More to come
+- [ ] Lots of improvements!
 
 ## Frontend
 
@@ -50,3 +52,5 @@ This file will track progress, keep TODO notes, and log the previous work.
     Created with vue-cli
 
 - [ ] Create vue/components for the SQL models
+
+Vue.js is abandoned in favor of Handlebars templating for ease of use and quicker development. The primary focus of the project is to learn Rust, and secondary only to train on the frontend
