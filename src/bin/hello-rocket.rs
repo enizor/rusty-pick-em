@@ -121,16 +121,19 @@ fn games_with_date(
     if let Some(ref cookie) = cookies.get_private("token") {
         if let Ok(user) = get_session(cookie.value(), &*conn) {
             let parsed_date = NaiveDate::parse_from_str(&date.date.unwrap_or("LOL NOPE".to_string()), "%Y-%m-%d").unwrap_or(Local::today().naive_local());
+            let new_date = find_date(parsed_date.checked_sub_signed(Duration::days(1)).unwrap(), &conn);
+            if parsed_date != new_date {
+                return Err(Flash::warning(
+                    Redirect::to(&format!("/games?date={}", new_date.format("%Y-%m-%d"))), "Vous avez été redirigé vers un jour avec des matchs"))
+            }
             let context = GamesContext {
-                next_day: parsed_date.checked_add_signed(Duration::days(1))
-                .unwrap().format("%Y-%m-%d").to_string(),
-                previous_day: parsed_date.checked_sub_signed(Duration::days(1))
-                .unwrap().format("%Y-%m-%d").to_string(),
+                next_day: next_date(parsed_date, &conn).map_or("".to_string(), |d| d.format("%Y-%m-%d").to_string()),
+                previous_day: prev_date(parsed_date, &conn).map_or("".to_string(), |d| d.format("%Y-%m-%d").to_string()),
                 flash: flash
                     .map(|msg| msg.msg().to_string())
                     .unwrap_or("".to_string()),
                 username: user.name,
-                games: upcoming_games(&*conn, parsed_date, user.id),
+                games: upcoming_games(&*conn, parsed_date, user.id)
             };
             return Ok(Template::render("games", &context));
         }
@@ -146,22 +149,12 @@ fn games(
     conn: DbConn,
     flash: Option<FlashMessage>,
     mut cookies: Cookies,
-) -> Result<Template, Flash<Redirect>> {
+) -> Result<Redirect, Flash<Redirect>> {
     if let Some(ref cookie) = cookies.get_private("token") {
         if let Ok(user) = get_session(cookie.value(), &*conn) {
             let parsed_date = Local::today().naive_local();
-            let context = GamesContext {
-                next_day: parsed_date.checked_add_signed(Duration::days(1))
-                .unwrap().format("%Y-%m-%d").to_string(),
-                previous_day: parsed_date.checked_sub_signed(Duration::days(1))
-                .unwrap().format("%Y-%m-%d").to_string(),
-                flash: flash
-                    .map(|msg| msg.msg().to_string())
-                    .unwrap_or("".to_string()),
-                username: user.name,
-                games: upcoming_games(&*conn, Local::today().naive_local(), user.id),
-            };
-            return Ok(Template::render("games", &context));
+            let new_date = find_date(parsed_date.checked_sub_signed(Duration::days(1)).unwrap(), &conn);
+            return Ok(Redirect::to(&format!("/games?date={}", new_date.format("%Y-%m-%d"))));
         }
     }
     Err(Flash::error(

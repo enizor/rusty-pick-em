@@ -6,7 +6,7 @@ extern crate serde;
 use self::diesel::prelude::*;
 use models::{Game, Team, Bet, User};
 use chrono::prelude::*;
-use chrono::{Utc, Date};
+use chrono::{Utc, Date, DateTime};
 use diesel::pg::PgConnection;
 
 #[derive(Serialize)]
@@ -166,6 +166,28 @@ pub fn get_game(id: i32, conn: &PgConnection) -> Option<Game> {
     use schema::games::dsl::{games};
     games.find(id)
         .first::<Game>(conn).ok()
+}
+
+// Find a date that actually has a game
+// Defaults to next future game
+pub fn find_date(date: NaiveDate, conn: &PgConnection) -> NaiveDate {
+    next_date(date, conn).unwrap_or_else(|| prev_date(date, conn).unwrap_or_else(|| date))
+}
+
+pub fn next_date(date: NaiveDate, conn: &PgConnection) -> Option<NaiveDate> {
+    use schema::games::dsl::{games, time};
+    use diesel::dsl::sql;
+    games.select(time).filter(sql(&format!("date(time) > '{}'", date.format("%Y-%m-%d"))))
+    .order(time.asc()).limit(1).first::<DateTime<Utc>>(conn)
+    .ok().map(|d| d.naive_utc().date())
+}
+
+pub fn prev_date(date: NaiveDate, conn: &PgConnection) -> Option<NaiveDate> {
+    use schema::games::dsl::{games, time};
+    use diesel::dsl::sql;
+    games.select(time).filter(sql(&format!("date(time) < '{}'", date.format("%Y-%m-%d"))))
+    .order(time.desc()).limit(1).first::<DateTime<Utc>>(conn)
+    .ok().map(|d| d.naive_utc().date())
 }
 
 pub fn update_users_points(conn: &PgConnection) {
