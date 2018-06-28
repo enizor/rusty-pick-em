@@ -106,7 +106,7 @@
             <img src="{{this.team1.flag}}" alt="{{this.team1.name}}" class="pure-u-5-12 pure-u-sm-1-5 flag">
             <div class="pure-u-5-12 pure-u-sm-1-5">
                 <p>{{this.team1.name}}</p>
-                {{#if game.finished}}
+                {{#if this.finished}}
                 <p>{{this.score1}}</p>
                 {{/if}}{{#if this.bet.id}}
                 <p>{{this.bet.score1}}</p>
@@ -117,14 +117,14 @@
 
                     {{#if this.started}} Détails {{else}} Parier ! {{/if}}
                 </a>
-                {{#if game.finished}}
+                {{#if this.finished}}
                 <p style="text-align: center">Résultat</p>
                 {{/if}}
                 <p style="text-align: center">Pari</p>
             </div>
             <div class="pure-u-5-12 pure-u-sm-1-5">
                 <p>{{this.team2.name}}</p>
-                {{#if game.finished}}
+                {{#if this.finished}}
                 <p>{{this.score2}}</p>
                 {{/if}}{{#if this.bet.id}}
                 <p>{{this.bet.score2}}</p>
