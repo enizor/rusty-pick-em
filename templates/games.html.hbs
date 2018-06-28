@@ -112,7 +112,12 @@
             </div>
             <div class="pure-u-1 pure-u-sm-1-8">
                 <a href="/game/{{this.id}}" class="pure-button button-{{#if this.bet.id}}success{{else}}warning{{/if}}" style="margin-top: auto;margin-bottom: auto;">
+
+                    {{#if this.started}}
+                    Détails
+                    {{else}}
                     Parier !
+                    {{/if}}
                 </a>
                 <p style="text-align: center">Pari</p>
             </div>
