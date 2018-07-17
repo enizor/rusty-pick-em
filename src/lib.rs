@@ -1,3 +1,7 @@
+#![feature(plugin)]
+#![feature(custom_derive)]
+#![plugin(rocket_codegen)]
+
 #[macro_use]
 extern crate diesel;
 extern crate dotenv;
@@ -5,10 +9,14 @@ extern crate chrono;
 #[macro_use]
 extern crate serde_derive;
 extern crate rand;
+extern crate rocket;
+extern crate rocket_contrib;
+extern crate time;
 
 pub mod schema;
 pub mod models;
 pub mod games;
+pub mod routes;
 use diesel::prelude::*;
 use diesel::pg::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool};

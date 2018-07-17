@@ -4,12 +4,7 @@
 
 extern crate rocket;
 extern crate rocket_contrib;
-#[macro_use]
-extern crate diesel;
-#[macro_use]
-extern crate serde_derive;
 extern crate chrono;
-extern crate rusty_pick_em;
 extern crate time;
 
 use rocket::http::{Cookie, Cookies, Status};
@@ -19,9 +14,10 @@ use rocket::{Outcome, Request, State};
 
 use rocket_contrib::Template;
 
-use self::rusty_pick_em::games::*;
-use self::rusty_pick_em::models::*;
-use self::rusty_pick_em::*;
+use games::*;
+use models::*;
+use *;
+use schema::*;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
@@ -34,17 +30,17 @@ use std::fs::File;
 use std::path::{Path, PathBuf};
 
 #[get("/")]
-fn index() -> Redirect {
+pub fn index() -> Redirect {
     Redirect::to("/games")
 }
 
 #[derive(Serialize)]
-struct Message {
+pub struct Message {
     flash: String,
 }
 
 #[get("/login")]
-fn login(flash: Option<FlashMessage>) -> Template {
+pub fn login(flash: Option<FlashMessage>) -> Template {
     let msg = flash
         .map(|msg| format!("{}: {}", msg.name(), msg.msg()))
         .unwrap_or_else(|| "Login".to_string());
@@ -52,13 +48,13 @@ fn login(flash: Option<FlashMessage>) -> Template {
 }
 
 #[derive(FromForm, Serialize)]
-struct AuthUser {
+pub struct AuthUser {
     name: String,
     password: String,
 }
 
 #[post("/login", data = "<auth_user>")]
-fn authUser(auth_user: Form<AuthUser>, mut cookies: Cookies, conn: DbConn) -> Flash<Redirect> {
+pub fn authUser(auth_user: Form<AuthUser>, mut cookies: Cookies, conn: DbConn) -> Flash<Redirect> {
     if let Some(token) = create_session(&auth_user.get().name, &*conn) {
         cookies.add_private(Cookie::new("token", token));
         Flash::success(
@@ -72,7 +68,7 @@ fn authUser(auth_user: Form<AuthUser>, mut cookies: Cookies, conn: DbConn) -> Fl
 }
 
 #[get("/logout")]
-fn logout(mut cookies: Cookies, conn: DbConn) -> Flash<Redirect> {
+pub fn logout(mut cookies: Cookies, conn: DbConn) -> Flash<Redirect> {
     if let Some(ref cookie) = cookies.get_private("token") {
         if let Ok(user) = get_session(cookie.value(), &*conn) {
             delete_session(&user.name, &*conn);
@@ -86,7 +82,7 @@ fn logout(mut cookies: Cookies, conn: DbConn) -> Flash<Redirect> {
 }
 
 #[get("/test")]
-fn test(mut cookies: Cookies, conn: DbConn) -> Result<&'static str, Flash<Redirect>> {
+pub fn test(mut cookies: Cookies, conn: DbConn) -> Result<&'static str, Flash<Redirect>> {
     if let Some(ref cookie) = cookies.get_private("token") {
         if get_session(cookie.value(), &*conn).is_ok() {
             return Ok("Acces granted!");
@@ -99,7 +95,7 @@ fn test(mut cookies: Cookies, conn: DbConn) -> Result<&'static str, Flash<Redire
 }
 
 #[derive(Serialize)]
-struct GamesContext {
+pub struct GamesContext {
     next_day: String,
     previous_day: String,
     flash: String,
@@ -108,11 +104,11 @@ struct GamesContext {
 }
 
 #[derive(FromForm)]
-struct CustomDate {
+pub struct CustomDate {
     date: Option<String>
 }
 #[get("/games?<date>")]
-fn games_with_date(
+pub fn games_with_date(
     date: CustomDate,
     conn: DbConn,
     flash: Option<FlashMessage>,
@@ -145,7 +141,7 @@ fn games_with_date(
 }
 
 #[get("/games")]
-fn games(
+pub fn games(
     conn: DbConn,
     flash: Option<FlashMessage>,
     mut cookies: Cookies,
@@ -164,22 +160,22 @@ fn games(
 }
 
 #[derive(FromForm, Serialize)]
-struct PlaceBet {
+pub struct PlaceBet {
     game_id: i32,
     score1: i32,
     score2: i32,
 }
 
 #[post("/games", data = "<bet>")]
-fn postbet(bet: Form<PlaceBet>, conn: DbConn, mut cookies: Cookies) -> Flash<Redirect> {
+pub fn postbet(bet: Form<PlaceBet>, conn: DbConn, mut cookies: Cookies) -> Flash<Redirect> {
     if let Some(ref cookie) = cookies.get_private("token") {
         if let Ok(user) = get_session(cookie.value(), &*conn) {
             // Update if exists
-            use self::schema::games::dsl::*;
+            use schema::games::dsl::*;
             if games.filter(time.gt(Local::now()))
             .find(&bet.get().game_id).first::<Game>(&*conn).is_ok() {
 
-                use self::schema::bets::dsl::*;
+                use schema::bets::dsl::*;
                 let result = diesel::update(
                     bets.filter(game_id.eq(&bet.get().game_id))
                         .filter(user_id.eq(user.id)),
@@ -209,7 +205,7 @@ fn postbet(bet: Form<PlaceBet>, conn: DbConn, mut cookies: Cookies) -> Flash<Red
 }
 
 #[derive(Serialize)]
-struct GameContext {
+pub struct GameContext {
     flash: String,
     username: String,
     game: GameDetails,
@@ -218,7 +214,7 @@ struct GameContext {
 }
 
 #[get("/game/<id>")]
-fn game_detail(id: i32, conn: DbConn, flash: Option<FlashMessage>, mut cookies: Cookies )
+pub fn game_detail(id: i32, conn: DbConn, flash: Option<FlashMessage>, mut cookies: Cookies )
 -> Result<Template, Flash<Redirect>> {
     if let Some(ref cookie) = cookies.get_private("token") {
         if let Ok(user) = get_session(cookie.value(), &*conn) {
@@ -243,19 +239,19 @@ fn game_detail(id: i32, conn: DbConn, flash: Option<FlashMessage>, mut cookies: 
 }
 
 #[derive(FromForm, Serialize)]
-struct PostResults {
+pub struct PostResults {
     game_id: i32,
     score1: i32,
     score2: i32,
 }
 
 #[post("/result", data = "<res>")]
-fn postresult(res: Form<PostResults>, conn: DbConn, mut cookies: Cookies) -> Flash<Redirect> {
+pub fn postresult(res: Form<PostResults>, conn: DbConn, mut cookies: Cookies) -> Flash<Redirect> {
     if let Some(ref cookie) = cookies.get_private("token") {
         if let Ok(user) = get_session(cookie.value(), &*conn) {
             if user.isAdmin {
                 // Update if exists
-                use self::schema::games::dsl::*;
+                use schema::games::dsl::*;
                 if let Ok(game) = games.find(&res.get().game_id).first::<Game>(&*conn) {
 
                     let result = diesel::update(
@@ -274,17 +270,6 @@ fn postresult(res: Form<PostResults>, conn: DbConn, mut cookies: Cookies) -> Fla
         Redirect::to("/login"),
         "Votre session a expiré. Merci de vous authentifier.",
     )
-}
-
-fn main() {
-    rocket::ignite()
-        .mount(
-            "/",
-            routes![index, login, authUser, logout, test, games, games_with_date, postbet, game_detail, postresult],
-        )
-        .attach(Template::fairing())
-        .manage(init_pool())
-        .launch();
 }
 
 // Connection request guard type: a wrapper around an r2d2 pooled connection.
