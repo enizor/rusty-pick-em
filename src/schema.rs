@@ -1,44 +1,44 @@
 table! {
     bets (id) {
-        id -> Int4,
-        user_id -> Int4,
-        game_id -> Int4,
-        score1 -> Int4,
-        score2 -> Int4,
-        points -> Int4,
+        id -> Integer,
+        user_id -> Integer,
+        game_id -> Integer,
+        score1 -> Integer,
+        score2 -> Integer,
+        points -> Integer,
     }
 }
 
 table! {
     games (id) {
-        id -> Int4,
-        time -> Timestamptz,
-        score1 -> Nullable<Int4>,
-        score2 -> Nullable<Int4>,
+        id -> Integer,
+        time -> Timestamp,
+        score1 -> Nullable<Integer>,
+        score2 -> Nullable<Integer>,
         finished -> Bool,
-        team1 -> Nullable<Int4>,
-        team2 -> Nullable<Int4>,
+        team1 -> Nullable<Integer>,
+        team2 -> Nullable<Integer>,
     }
 }
 
 table! {
     teams (id) {
-        id -> Int4,
-        name -> Varchar,
-        abbr -> Bpchar,
-        flag -> Varchar,
+        id -> Integer,
+        name -> Text,
+        abbr -> Text,
+        flag -> Text,
     }
 }
 
 table! {
     users (id) {
-        id -> Int4,
-        name -> Varchar,
-        passwd -> Varchar,
-        token -> Nullable<Varchar>,
-        tokenexpireat -> Nullable<Timestamptz>,
-        isadmin -> Bool,
-        points -> Int4,
+        id -> Integer,
+        name -> Text,
+        passwd -> Text,
+        token -> Nullable<Text>,
+        tokenExpireAt -> Nullable<Timestamp>,
+        isAdmin -> Bool,
+        points -> Integer,
     }
 }
 

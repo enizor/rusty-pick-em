@@ -1,22 +1,18 @@
 
-#![feature(plugin)]
-#![plugin(rocket_codegen)]
 
 extern crate rusty_pick_em;
 use self::rusty_pick_em::routes::*;
-use self::rusty_pick_em::*;
 
-extern crate rocket;
-extern crate rocket_contrib;
-use rocket_contrib::Template;
+#[macro_use] extern crate rocket;
+use rocket_dyn_templates::Template;
 
-fn main() {
-    rocket::ignite()
+#[launch]
+fn rocket() -> _ {
+    rocket::build()
         .mount(
             "/",
-            routes![index, login, authUser, logout, test, games, games_with_date, postbet, game_detail, postresult],
+            routes![index, login, authUser, logout, games, games_with_date, postbet, game_detail, postresult],
         )
+        .attach(DbConn::fairing())
         .attach(Template::fairing())
-        .manage(init_pool())
-        .launch();
 }

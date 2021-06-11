@@ -1,11 +1,11 @@
 extern crate chrono;
 
-use self::chrono::{DateTime, Utc};
+use self::chrono::{NaiveDateTime};
 
 #[derive(Queryable)]
 pub struct Game {
     pub id: i32,
-    pub time: DateTime<Utc>,
+    pub time: NaiveDateTime,
     pub score1: Option<i32>,
     pub score2: Option<i32>,
     pub finished: bool,
@@ -27,7 +27,7 @@ pub struct User {
     pub name: String,
     pub passwd: String,
     pub token: Option<String>,
-    pub tokenExpireAt: Option<DateTime<Utc>>,
+    pub tokenExpireAt: Option<NaiveDateTime>,
     pub isAdmin: bool,
     pub points: i32
 }

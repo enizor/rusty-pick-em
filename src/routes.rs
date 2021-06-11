@@ -1,33 +1,21 @@
-#![feature(plugin)]
-#![feature(custom_derive)]
-#![plugin(rocket_codegen)]
+use rocket::http::{Cookie, CookieJar, Status};
+use rocket::form::Form;
+use rocket::fs::NamedFile;
+use rocket::request::{self, FlashMessage, FromRequest};
+use rocket::response::{Flash, Redirect};
+use rocket::{Request, State};
+use rocket_sync_db_pools::{database, diesel};
+use rocket_dyn_templates::Template;
 
-extern crate rocket;
-extern crate rocket_contrib;
-extern crate chrono;
-extern crate time;
-
-use rocket::http::{Cookie, Cookies, Status};
-use rocket::request::{self, FlashMessage, Form, FromRequest};
-use rocket::response::{Flash, NamedFile, Redirect};
-use rocket::{Outcome, Request, State};
-
-use rocket_contrib::Template;
-
-use games::*;
-use models::*;
-use *;
-use schema::*;
-use diesel::pg::PgConnection;
+use crate::games::*;
+use crate::models::*;
 use diesel::prelude::*;
-use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
 use std::ops::Deref;
 use chrono::prelude::*;
 
 use time::Duration;
 
-use std::fs::File;
-use std::path::{Path, PathBuf};
+
 
 #[get("/")]
 pub fn index() -> Redirect {
@@ -42,7 +30,7 @@ pub struct Message {
 #[get("/login")]
 pub fn login(flash: Option<FlashMessage>) -> Template {
     let msg = flash
-        .map(|msg| format!("{}: {}", msg.name(), msg.msg()))
+        .map(|msg| {let (name, m) = msg.into_inner(); format!("{}: {}", name, m)})
         .unwrap_or_else(|| "Login".to_string());
     Template::render("login", &Message { flash: msg })
 }
@@ -54,44 +42,34 @@ pub struct AuthUser {
 }
 
 #[post("/login", data = "<auth_user>")]
-pub fn authUser(auth_user: Form<AuthUser>, mut cookies: Cookies, conn: DbConn) -> Flash<Redirect> {
-    if let Some(token) = create_session(&auth_user.get().name, &*conn) {
+pub async fn authUser(auth_user: Form<AuthUser>, cookies: &CookieJar<'_>, conn: DbConn) -> Flash<Redirect> {
+    if let Some(token) = conn.run(move |c|
+        crate::create_session(&auth_user.name, &c)).await {
         cookies.add_private(Cookie::new("token", token));
         Flash::success(
-        Redirect::to("/games"),
-        "Bienvenue")
+            Redirect::to("/games"),
+            "Bienvenue")
     } else {
-        Flash::error(
+    Flash::error(
         Redirect::to("/login"),
         "Identifiants incorrects")
     }
 }
 
 #[get("/logout")]
-pub fn logout(mut cookies: Cookies, conn: DbConn) -> Flash<Redirect> {
-    if let Some(ref cookie) = cookies.get_private("token") {
-        if let Ok(user) = get_session(cookie.value(), &*conn) {
-            delete_session(&user.name, &*conn);
-            cookies.remove_private(Cookie::named("token"));
-            return Flash::success(Redirect::to("/login"), "Vous avez bien été déconnnecté");
-        }
+pub async fn logout(cookies: &CookieJar<'_>, conn: DbConn) -> Flash<Redirect> {
+    if let Some(cookie) = cookies.get_private("token") {
+        conn.run(move |c|
+            if let Ok(user) = crate::get_session(cookie.value(), &c) {
+                crate::delete_session(&user.name, &c);
+            }
+        ).await;
+        cookies.remove_private(Cookie::named("token"));
+        return Flash::success(Redirect::to("/login"), "Vous avez bien été déconnnecté");
     }
     Flash::error(
         Redirect::to("/login"),
         "Votre session a expiré. Merci de vous authentifier.")
-}
-
-#[get("/test")]
-pub fn test(mut cookies: Cookies, conn: DbConn) -> Result<&'static str, Flash<Redirect>> {
-    if let Some(ref cookie) = cookies.get_private("token") {
-        if get_session(cookie.value(), &*conn).is_ok() {
-            return Ok("Acces granted!");
-        }
-    }
-    Err(Flash::error(
-        Redirect::to("/login"),
-        "Votre session a expiré. Merci de vous authentifier.",
-    ))
 }
 
 #[derive(Serialize)]
@@ -108,28 +86,32 @@ pub struct CustomDate {
     date: Option<String>
 }
 #[get("/games?<date>")]
-pub fn games_with_date(
-    date: CustomDate,
+pub async fn games_with_date(
+    date: &str,
     conn: DbConn,
-    flash: Option<FlashMessage>,
-    mut cookies: Cookies,
+    flash: Option<FlashMessage<'_>>,
+    cookies: &CookieJar<'_>,
 ) -> Result<Template, Flash<Redirect>> {
-    if let Some(ref cookie) = cookies.get_private("token") {
-        if let Ok(user) = get_session(cookie.value(), &*conn) {
-            let parsed_date = NaiveDate::parse_from_str(&date.date.unwrap_or("LOL NOPE".to_string()), "%Y-%m-%d").unwrap_or(Local::today().naive_local());
-            let new_date = find_date(parsed_date.checked_sub_signed(Duration::days(1)).unwrap(), &conn);
+    if let Some(cookie) = cookies.get_private("token") {
+        if let Ok(user) = conn.run(move |c|crate::get_session(cookie.value(), &c)).await {
+            dbg!(&date);
+            let parsed_date = NaiveDate::parse_from_str(&date, "%Y-%m-%d").unwrap_or(Utc::today().naive_utc());
+            let previous_date = parsed_date.checked_sub_signed(Duration::days(1)).unwrap();
+            let new_date = conn.run(move |c| find_date(previous_date, &c)).await;
             if parsed_date != new_date {
                 return Err(Flash::warning(
-                    Redirect::to(&format!("/games?date={}", new_date.format("%Y-%m-%d"))), "Vous avez été redirigé vers un jour avec des matchs"))
+                    Redirect::to(format!("/games?date={}", new_date.format("%Y-%m-%d"))), "Vous avez été redirigé vers un jour avec des matchs"))
             }
+            dbg!(parsed_date);
+            let userID = user.id;
             let context = GamesContext {
-                next_day: next_date(parsed_date, &conn).map_or("".to_string(), |d| d.format("%Y-%m-%d").to_string()),
-                previous_day: prev_date(parsed_date, &conn).map_or("".to_string(), |d| d.format("%Y-%m-%d").to_string()),
+                next_day: conn.run(move |c| next_date(parsed_date, &c)).await.map_or("".to_string(), |d| d.format("%Y-%m-%d").to_string()),
+                previous_day: conn.run(move |c| prev_date(parsed_date, &c)).await.map_or("".to_string(), |d| d.format("%Y-%m-%d").to_string()),
                 flash: flash
-                    .map(|msg| msg.msg().to_string())
+                    .map(|msg| msg.message().to_string())
                     .unwrap_or("".to_string()),
-                username: user.name,
-                games: upcoming_games(&*conn, parsed_date, user.id)
+                games: conn.run(move |c| upcoming_games(&c, parsed_date, userID)).await,
+                username: user.name
             };
             return Ok(Template::render("games", &context));
         }
@@ -141,16 +123,16 @@ pub fn games_with_date(
 }
 
 #[get("/games")]
-pub fn games(
+pub async fn games(
     conn: DbConn,
-    flash: Option<FlashMessage>,
-    mut cookies: Cookies,
+    flash: Option<FlashMessage<'_>>,
+    cookies: &CookieJar<'_>,
 ) -> Result<Redirect, Flash<Redirect>> {
-    if let Some(ref cookie) = cookies.get_private("token") {
-        if let Ok(user) = get_session(cookie.value(), &*conn) {
-            let parsed_date = Local::today().naive_local();
-            let new_date = find_date(parsed_date.checked_sub_signed(Duration::days(1)).unwrap(), &conn);
-            return Ok(Redirect::to(&format!("/games?date={}", new_date.format("%Y-%m-%d"))));
+    if let Some(cookie) = cookies.get_private("token") {
+        if let Ok(user) = conn.run(move |c| crate::get_session(cookie.value(), &c)).await {
+            let parsed_date = Utc::today().naive_utc();
+            let new_date = conn.run(move |c| find_date(parsed_date.checked_sub_signed(Duration::days(1)).unwrap(), &c)).await;
+            return Ok(Redirect::to(format!("/games?date={}", new_date.format("%Y-%m-%d"))));
         }
     }
     Err(Flash::error(
@@ -159,7 +141,7 @@ pub fn games(
     ))
 }
 
-#[derive(FromForm, Serialize)]
+#[derive(Debug, FromForm, Serialize)]
 pub struct PlaceBet {
     game_id: i32,
     score1: i32,
@@ -167,34 +149,40 @@ pub struct PlaceBet {
 }
 
 #[post("/games", data = "<bet>")]
-pub fn postbet(bet: Form<PlaceBet>, conn: DbConn, mut cookies: Cookies) -> Flash<Redirect> {
-    if let Some(ref cookie) = cookies.get_private("token") {
-        if let Ok(user) = get_session(cookie.value(), &*conn) {
+pub async fn postbet(bet: Form<PlaceBet>, conn: DbConn, cookies: &CookieJar<'_>) -> Flash<Redirect> {
+    dbg!(&bet);
+    if let Some(cookie) = cookies.get_private("token") {
+        if let Ok(user) = conn.run(move |c| crate::get_session(cookie.value(), &c)).await {
             // Update if exists
-            use schema::games::dsl::*;
-            if games.filter(time.gt(Local::now()))
-            .find(&bet.get().game_id).first::<Game>(&*conn).is_ok() {
+            use crate::schema::games::dsl::*;
+            let gameID = bet.game_id;
+            let userID = user.id;
+            let bet_score1 = bet.score1;
+            let bet_score2 = bet.score2;
 
-                use schema::bets::dsl::*;
-                let result = diesel::update(
-                    bets.filter(game_id.eq(&bet.get().game_id))
-                        .filter(user_id.eq(user.id)),
-                ).set((score1.eq(&bet.get().score1), score2.eq(&bet.get().score2)))
-                    .get_result::<Bet>(&*conn);
+            if conn.run(move |c| games.filter(time.gt(Utc::now().naive_utc()))
+            .find(gameID).first::<Game>(c)).await.is_ok() {
+
+                use crate::schema::bets::dsl::*;
+                let result = conn.run(move |c| diesel::update(
+                    bets.filter(game_id.eq(gameID))
+                        .filter(user_id.eq(userID)),
+                ).set((score1.eq(bet_score1), score2.eq(bet_score2)))
+                    .execute(c)).await;
 
                 // Else insert the bet
-                if result.is_err() {
-                    diesel::insert_into(bets)
+                if result.is_err() || result == Ok(0) {
+                    conn.run(move |c| diesel::insert_into(bets)
                     .values((
                         user_id.eq(user.id),
-                        game_id.eq(&bet.get().game_id),
-                        score1.eq(&bet.get().score1),
-                        score2.eq(&bet.get().score2)
+                        game_id.eq(gameID),
+                        score1.eq(bet_score1),
+                        score2.eq(bet_score2)
                     ))
-                    .execute(&*conn)
+                    .execute(c)).await
                     .expect("Error saving new post");
                 }
-                return Flash::success(Redirect::to(&format!("/game/{}", &bet.get().game_id)), "Pari enregistré");
+                return Flash::success(Redirect::to(format!("/game/{}", gameID)), "Pari enregistré");
             }
         }
     }
@@ -214,19 +202,21 @@ pub struct GameContext {
 }
 
 #[get("/game/<id>")]
-pub fn game_detail(id: i32, conn: DbConn, flash: Option<FlashMessage>, mut cookies: Cookies )
+pub async fn game_detail(id: i32, conn: DbConn, flash: Option<FlashMessage<'_>>, cookies: &CookieJar<'_> )
 -> Result<Template, Flash<Redirect>> {
-    if let Some(ref cookie) = cookies.get_private("token") {
-        if let Ok(user) = get_session(cookie.value(), &*conn) {
-            if let Some(game) = get_game(id, &*conn) {
+    if let Some(cookie) = cookies.get_private("token") {
+        if let Ok(user) = conn.run(move |c| crate::get_session(cookie.value(), c)).await {
+            if let Some(game) = conn.run(move |c| get_game(id, c)).await {
+                let userID = user.id;
+                let day = game.time.format("%Y-%m-%d").to_string();
                 let context = GameContext {
                     flash: flash
-                        .map(|msg| msg.msg().to_string())
+                        .map(|msg| msg.message().to_string())
                         .unwrap_or("".to_string()),
                     username: user.name,
-                    game: game.to_context(user.id, &*conn),
+                    game: conn.run(move |c| game.to_context(userID, c)).await,
                     admin: user.isAdmin,
-                    day: game.time.format("%Y-%m-%d").to_string()
+                    day
                 };
                 return Ok(Template::render("game", &context));
             }
@@ -246,21 +236,22 @@ pub struct PostResults {
 }
 
 #[post("/result", data = "<res>")]
-pub fn postresult(res: Form<PostResults>, conn: DbConn, mut cookies: Cookies) -> Flash<Redirect> {
-    if let Some(ref cookie) = cookies.get_private("token") {
-        if let Ok(user) = get_session(cookie.value(), &*conn) {
+pub async fn postresult(res: Form<PostResults>, conn: DbConn, cookies: &CookieJar<'_>) -> Flash<Redirect> {
+    if let Some(cookie) = cookies.get_private("token") {
+        if let Ok(user) = conn.run(move |c| crate::get_session(cookie.value(), c)).await {
             if user.isAdmin {
                 // Update if exists
-                use schema::games::dsl::*;
-                if let Ok(game) = games.find(&res.get().game_id).first::<Game>(&*conn) {
+                use crate::schema::games::dsl::*;
+                let gameID= res.game_id;
+                if let Ok(game) = conn.run(move |c| games.find(gameID).first::<Game>(c)).await {
 
-                    let result = diesel::update(
+                    conn.run(move |c| diesel::update(
                         games.filter(id.eq(game.id))
-                    ).set((score1.eq(&res.get().score1), score2.eq(&res.get().score2)))
-                    .get_result::<Game>(&*conn)
+                    ).set((score1.eq(&res.score1), score2.eq(&res.score2)))
+                    .execute(c)).await
                     .expect("Error setting game result");
-
-                    result.update_bets(&conn);
+                    let result: Game = conn.run(move |c| games.find(gameID).first(c)).await.expect("Error getting game result");
+                    conn.run(move |c| result.update_bets(c)).await;
                     return Flash::success(Redirect::to("/games"), "Résultat enregistré");
                 }
             }
@@ -272,29 +263,6 @@ pub fn postresult(res: Form<PostResults>, conn: DbConn, mut cookies: Cookies) ->
     )
 }
 
-// Connection request guard type: a wrapper around an r2d2 pooled connection.
-pub struct DbConn(pub PooledConnection<ConnectionManager<PgConnection>>);
+#[database("euro21")]// Connection request guard type: a wrapper around an r2d2 pooled connection.
+pub struct DbConn(diesel::SqliteConnection);
 
-/// Attempts to retrieve a single connection from the managed database pool. If
-/// no pool is currently managed, fails with an `InternalServerError` status. If
-/// no connections are available, fails with a `ServiceUnavailable` status.
-impl<'a, 'r> FromRequest<'a, 'r> for DbConn {
-    type Error = ();
-
-    fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
-        let pool = request.guard::<State<PgPool>>()?;
-        match pool.get() {
-            Ok(conn) => Outcome::Success(DbConn(conn)),
-            Err(_) => Outcome::Failure((Status::ServiceUnavailable, ())),
-        }
-    }
-}
-
-// For the convenience of using an &DbConn as an &PgConnection.
-impl Deref for DbConn {
-    type Target = PgConnection;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}

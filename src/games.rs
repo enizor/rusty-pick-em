@@ -4,15 +4,14 @@ extern crate serde;
 
 
 use self::diesel::prelude::*;
-use models::{Game, Team, Bet, User};
+use crate::models::{Game, Team, Bet};
 use chrono::prelude::*;
-use chrono::{Utc, Date, DateTime};
-use diesel::pg::PgConnection;
-
+use chrono::{Utc};
+use crate::schema;
 #[derive(Serialize)]
 pub struct GameDetails {
     pub id: i32,
-    pub time: i64,
+    pub time: NaiveDateTime,
     pub score1: i32,
     pub score2: i32,
     pub team1: Team,
@@ -33,12 +32,12 @@ pub struct BetDetails {
 }
 
 impl Game {
-    pub fn to_context(&self, user: i32, conn: &PgConnection) -> GameDetails {
+    pub fn to_context(&self, user: i32, conn: &SqliteConnection) -> GameDetails {
 
-        use schema::teams::dsl::teams;
+        use crate::schema::teams::dsl::teams;
         let team1 = if self.team1.is_some() {
             teams.find(self.team1.unwrap())
-                .get_result::<Team>(conn)
+                .first(conn)
                 .expect("Unable to get team")
             } else {
                 Team {
@@ -50,7 +49,7 @@ impl Game {
             };
         let team2 = if self.team2.is_some() {
             teams.find(self.team2.unwrap())
-                .get_result::<Team>(conn)
+                .first(conn)
                 .expect("Unable to get team")
             } else {
                 Team {
@@ -86,7 +85,7 @@ impl Game {
 
         GameDetails {
             id: self.id,
-            time: self.time.timestamp_millis(),
+            time: self.time,
             score1: self.score1.unwrap_or(0),
             score2: self.score2.unwrap_or(0),
             team1: team1,
@@ -103,10 +102,10 @@ impl Game {
     }
 
     fn is_started(&self) -> bool {
-        self.time < Utc::now()
+        self.time < Utc::now().naive_utc()
     }
 
-    pub fn update_bets(&self, conn: &PgConnection) {
+    pub fn update_bets(&self, conn: &SqliteConnection) {
         use schema::bets::dsl::*;
         let bets_vec = bets.filter(game_id.eq(self.id))
         .load::<Bet>(&*conn)
@@ -116,7 +115,7 @@ impl Game {
             let points_won = self.points_for_bet(&bet);
             diesel::update(bets.find(bet.id))
             .set(points.eq(points_won))
-            .get_result::<Bet>(&*conn)
+            .execute(conn)
             .expect("error updating bet's points");
         }
 
@@ -153,7 +152,7 @@ impl Game {
     }
 }
 
-pub fn upcoming_games(conn: &PgConnection, date: NaiveDate, user: i32) -> Vec<GameDetails> {
+pub fn upcoming_games(conn: &SqliteConnection, date: NaiveDate, user: i32) -> Vec<GameDetails> {
     use schema::games::dsl::{games, time};
     use diesel::dsl::sql;
     games.filter(sql(&format!("date(time) = '{}'", date.format("%Y-%m-%d"))))
@@ -162,7 +161,7 @@ pub fn upcoming_games(conn: &PgConnection, date: NaiveDate, user: i32) -> Vec<Ga
         .iter().map(|game| game.to_context(user, conn)).collect()
 }
 
-pub fn get_game(id: i32, conn: &PgConnection) -> Option<Game> {
+pub fn get_game(id: i32, conn: &SqliteConnection) -> Option<Game> {
     use schema::games::dsl::{games};
     games.find(id)
         .first::<Game>(conn).ok()
@@ -170,27 +169,27 @@ pub fn get_game(id: i32, conn: &PgConnection) -> Option<Game> {
 
 // Find a date that actually has a game
 // Defaults to next future game
-pub fn find_date(date: NaiveDate, conn: &PgConnection) -> NaiveDate {
+pub fn find_date(date: NaiveDate, conn: &SqliteConnection) -> NaiveDate {
     next_date(date, conn).unwrap_or_else(|| prev_date(date, conn).unwrap_or_else(|| date))
 }
 
-pub fn next_date(date: NaiveDate, conn: &PgConnection) -> Option<NaiveDate> {
+pub fn next_date(date: NaiveDate, conn: &SqliteConnection) -> Option<NaiveDate> {
     use schema::games::dsl::{games, time};
     use diesel::dsl::sql;
     games.select(time).filter(sql(&format!("date(time) > '{}'", date.format("%Y-%m-%d"))))
-    .order(time.asc()).limit(1).first::<DateTime<Utc>>(conn)
-    .ok().map(|d| d.naive_utc().date())
+    .order(time.asc()).limit(1).first::<NaiveDateTime>(conn).map(|d| d.date())
+    .ok()
 }
 
-pub fn prev_date(date: NaiveDate, conn: &PgConnection) -> Option<NaiveDate> {
+pub fn prev_date(date: NaiveDate, conn: &SqliteConnection) -> Option<NaiveDate> {
     use schema::games::dsl::{games, time};
     use diesel::dsl::sql;
     games.select(time).filter(sql(&format!("date(time) < '{}'", date.format("%Y-%m-%d"))))
-    .order(time.desc()).limit(1).first::<DateTime<Utc>>(conn)
-    .ok().map(|d| d.naive_utc().date())
+    .order(time.desc()).limit(1).first::<NaiveDateTime>(conn)
+    .ok().map(|d| d.date())
 }
 
-pub fn update_users_points(conn: &PgConnection) {
+pub fn update_users_points(conn: &SqliteConnection) {
         use schema::users::dsl::*;
         let users_vec = users.select(id).load::<i32>(&*conn)
         .expect("Unable to load users");
@@ -208,7 +207,7 @@ pub fn update_users_points(conn: &PgConnection) {
             }
             diesel::update(users.find(current_id))
             .set(points.eq(total_points as i32))
-            .get_result::<User>(&*conn)
+            .execute(conn)
             .expect("error updating user's points");
         }
 }
