@@ -63,12 +63,13 @@
         }
 
         .flag {
-            border: 1px solid #a5a5a5;
+            {{!-- border: 1px solid #a5a5a5; --}}
             margin-top: 5px;
             margin-bottom: 5px;
             margin-left: auto;
             margin-right: auto;
-            height: 20%;
+            width: 45px;
+            height: 33px;
         }
     </style>
 </head>
@@ -103,7 +104,9 @@
         <div class="pure-g game{{#if this.started}} started {{else}} {{#if this.bet.id}} has_bet {{else}} no_bet {{/if}}{{/if}}">
             <div id="game_time-{{this.id}}" class="pure-u-1" style="border-bottom: 1px solid #e5e5e5;margin-bottom: .3em">
             </div>
-            <img src="{{this.team1.flag}}" alt="{{this.team1.name}}" class="pure-u-5-12 pure-u-sm-1-5 flag">
+            <svg class="flag"><use xlink:href="{{this.team1.flag}}"></use></svg>
+
+            {{!-- <img src="{{this.team1.flag}}" alt="{{this.team1.name}}" class="pure-u-5-12 pure-u-sm-1-5 flag"> --}}
             <div class="pure-u-5-12 pure-u-sm-1-5">
                 <p>{{this.team1.name}}</p>
                 {{#if this.finished}}
@@ -130,7 +133,8 @@
                 <p>{{this.bet.score2}}</p>
                 {{/if}}
             </div>
-            <img src="{{this.team2.flag}}" alt="{{this.team2.name}}" class="pure-u-5-12 pure-u-sm-1-5 flag" />
+            <svg class="flag"><use xlink:href="{{this.team2.flag}}"></use></svg>
+            {{!-- <img src="{{this.team2.flag}}" alt="{{this.team2.name}}" class="pure-u-5-12 pure-u-sm-1-5 flag" /> --}}
             <script>
                 var jours = ["Dimanche ", "Lundi ", "Mardi ", "Mercredi ", "Jeudi ", "Vendredi ", "Samedi "];
                 var d = new Date;

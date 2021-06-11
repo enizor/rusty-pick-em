@@ -55,12 +55,13 @@
         }
 
         .flag {
-            border: 1px solid #a5a5a5;
+            {{!-- border: 1px solid #a5a5a5; --}}
             margin-top: 5px;
             margin-bottom: 5px;
             margin-left: auto;
             margin-right: auto;
-            height: 20%;
+            width: 45px;
+            height: 33px;
         }
     </style>
 </head>
@@ -83,7 +84,8 @@
                 has_bet {{else}} no_bet {{/if}}">
                 <div id="game_time-{{game.id}}" class="pure-u-1" style="border-bottom: 1px solid #e5e5e5;margin-bottom: .3em">
                 </div>
-                <img src="{{game.team1.flag}}" alt="{{game.team1.name}}" class="pure-u-5-12 pure-u-sm-1-5 flag">
+                <svg class="flag"><use xlink:href="{{game.team1.flag}}"></use>></use></svg>
+                {{!-- <img src="{{game.team1.flag}}" alt="{{game.team1.name}}" class="pure-u-5-12 pure-u-sm-1-5 flag"> --}}
                 <div class="pure-u-5-12 pure-u-sm-1-5">
                     <p>{{game.team1.name}}</p>
                     {{#if game.finished}}
@@ -109,7 +111,8 @@
                     {{/if}}
                     <input style="margin: auto" class="pure-u-5-12" type="number" name="score2" value="{{game.bet.score2}}" {{#if game.started}}disabled{{/if}}>
                 </div>
-                <img src="{{game.team2.flag}}" alt="{{game.team2.name}}" class="pure-u-5-12 pure-u-sm-1-5 flag" />
+                <svg class="flag"><use xlink:href="{{game.team2.flag}}"></use>></use></svg>
+                {{!-- <img src="{{game.team2.flag}}" alt="{{game.team2.name}}" class="pure-u-5-12 pure-u-sm-1-5 flag" /> --}}
                 <script>
                     var jours = ["Dimanche ", "Lundi ", "Mardi ", "Mercredi ", "Jeudi ", "Vendredi ", "Samedi "];
                     var d = new Date;
