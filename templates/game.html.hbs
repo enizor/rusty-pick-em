@@ -115,8 +115,7 @@
                 {{!-- <img src="{{game.team2.flag}}" alt="{{game.team2.name}}" class="pure-u-5-12 pure-u-sm-1-5 flag" /> --}}
                 <script>
                     var jours = ["Dimanche ", "Lundi ", "Mardi ", "Mercredi ", "Jeudi ", "Vendredi ", "Samedi "];
-                    var d = new Date;
-                    d.setTime({{ game.time }});
+                    var d = new Date("{{ game.time }}");
                     var n = jours[d.getDay()] + d.getDate() + ' à ' + d.getHours() + ':00'
                     document.getElementById("game_time-{{game.id}}").innerHTML = n;
                 </script>
