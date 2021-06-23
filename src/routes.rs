@@ -7,6 +7,8 @@ use rocket_sync_db_pools::{database, diesel};
 
 use crate::games::*;
 use crate::models::*;
+use crate::schema;
+use crate::session::*;
 use chrono::prelude::*;
 use diesel::prelude::*;
 
@@ -45,10 +47,7 @@ pub async fn auth_user(
     cookies: &CookieJar<'_>,
     conn: DbConn,
 ) -> Flash<Redirect> {
-    if let Some(token) = conn
-        .run(move |c| crate::create_session(&auth_user.name, &c))
-        .await
-    {
+    if let Some(token) = conn.run(move |c| create_session(&auth_user.name, &c)).await {
         cookies.add_private(Cookie::new("token", token));
         Flash::success(Redirect::to("/games"), "Bienvenue")
     } else {
@@ -60,8 +59,8 @@ pub async fn auth_user(
 pub async fn logout(cookies: &CookieJar<'_>, conn: DbConn) -> Flash<Redirect> {
     if let Some(cookie) = cookies.get_private("token") {
         conn.run(move |c| {
-            if let Ok(user) = crate::get_session(cookie.value(), &c) {
-                crate::delete_session(&user.name, &c);
+            if let Ok(user) = get_session(cookie.value(), &c) {
+                delete_session(&user.name, &c);
             }
         })
         .await;
@@ -92,10 +91,7 @@ pub async fn games_with_date(
     cookies: &CookieJar<'_>,
 ) -> Result<Template, Flash<Redirect>> {
     if let Some(cookie) = cookies.get_private("token") {
-        if let Ok(user) = conn
-            .run(move |c| crate::get_session(cookie.value(), &c))
-            .await
-        {
+        if let Ok(user) = conn.run(move |c| get_session(cookie.value(), &c)).await {
             let parsed_date = NaiveDate::parse_from_str(&date, "%Y-%m-%d")
                 .unwrap_or_else(|_| Utc::today().naive_utc());
             let previous_date = parsed_date.checked_sub_signed(Duration::days(1)).unwrap();
@@ -144,7 +140,7 @@ pub async fn games(
 ) -> Result<Redirect, Flash<Redirect>> {
     if let Some(cookie) = cookies.get_private("token") {
         if conn
-            .run(move |c| crate::get_session(cookie.value(), &c))
+            .run(move |c| get_session(cookie.value(), &c))
             .await
             .is_ok()
         {
@@ -183,18 +179,15 @@ pub async fn postbet(
     cookies: &CookieJar<'_>,
 ) -> Flash<Redirect> {
     if let Some(cookie) = cookies.get_private("token") {
-        if let Ok(user) = conn
-            .run(move |c| crate::get_session(cookie.value(), &c))
-            .await
-        {
+        if let Ok(user) = conn.run(move |c| get_session(cookie.value(), &c)).await {
             // Update if exists
-            use crate::schema::games::dsl::*;
+            use schema::games::dsl::*;
             #[allow(non_snake_case)]
             let game_ID = bet.game_id;
             let bet_score1 = bet.score1;
             let bet_score2 = bet.score2;
 
-            if conn
+            let has_game = conn
                 .run(move |c| {
                     games
                         .filter(time.gt(Utc::now().naive_utc()))
@@ -202,9 +195,9 @@ pub async fn postbet(
                         .first::<Game>(c)
                 })
                 .await
-                .is_ok()
-            {
-                use crate::schema::bets::dsl::*;
+                .is_ok();
+            if has_game {
+                use schema::bets::dsl::*;
                 let result = conn
                     .run(move |c| {
                         diesel::update(bets.filter(game_id.eq(game_id)).filter(user_id.eq(user_id)))
@@ -258,10 +251,7 @@ pub async fn game_detail(
     cookies: &CookieJar<'_>,
 ) -> Result<Template, Flash<Redirect>> {
     if let Some(cookie) = cookies.get_private("token") {
-        if let Ok(user) = conn
-            .run(move |c| crate::get_session(cookie.value(), c))
-            .await
-        {
+        if let Ok(user) = conn.run(move |c| get_session(cookie.value(), c)).await {
             if let Some(game) = conn.run(move |c| get_game(id, c)).await {
                 let user_id = user.id;
                 let day = game.time.format("%Y-%m-%d").to_string();
@@ -298,13 +288,10 @@ pub async fn postresult(
     cookies: &CookieJar<'_>,
 ) -> Flash<Redirect> {
     if let Some(cookie) = cookies.get_private("token") {
-        if let Ok(user) = conn
-            .run(move |c| crate::get_session(cookie.value(), c))
-            .await
-        {
+        if let Ok(user) = conn.run(move |c| get_session(cookie.value(), c)).await {
             if user.isAdmin {
                 // Update if exists
-                use crate::schema::games::dsl::*;
+                use schema::games::dsl::*;
                 #[allow(non_snake_case)]
                 let game_ID = res.game_id;
                 if let Ok(game) = conn

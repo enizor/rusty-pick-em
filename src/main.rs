@@ -1,8 +1,23 @@
-extern crate rusty_pick_em;
-use self::rusty_pick_em::routes::*;
-
 #[macro_use]
 extern crate rocket;
+#[macro_use]
+extern crate diesel;
+#[macro_use]
+extern crate serde_derive;
+
+extern crate chrono;
+extern crate rand;
+extern crate rocket_dyn_templates;
+extern crate time;
+
+mod games;
+mod models;
+mod routes;
+mod schema;
+mod session;
+
+use routes::*;
+
 use rocket::fs::FileServer;
 use rocket_dyn_templates::Template;
 
@@ -16,7 +31,7 @@ fn rocket() -> _ {
                 login,
                 auth_user,
                 logout,
-                games,
+                routes::games,
                 games_with_date,
                 postbet,
                 game_detail,

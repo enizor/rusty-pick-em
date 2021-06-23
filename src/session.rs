@@ -1,39 +1,12 @@
-#[macro_use]
-extern crate rocket;
-#[macro_use]
-extern crate diesel;
-#[macro_use]
-extern crate serde_derive;
-extern crate chrono;
-extern crate dotenv;
-extern crate rand;
-extern crate rocket_dyn_templates;
-extern crate time;
-
-pub mod games;
-pub mod models;
-pub mod routes;
-pub mod schema;
+use crate::models::User;
+use crate::schema;
 use chrono::prelude::*;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
-use dotenv::dotenv;
-use models::User;
-use std::env;
-
 pub enum AuthError {
     NoToken,
     WrongToken,
     TokenExpired,
-    WrongUsernameOrPassword,
-}
-
-pub fn establish_connection() -> SqliteConnection {
-    dotenv().ok();
-
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    SqliteConnection::establish(&database_url)
-        .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
 }
 
 pub fn get_session(given_token: &str, conn: &SqliteConnection) -> Result<User, AuthError> {
