@@ -81,9 +81,7 @@
         const days = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
         const months = ["Janvier", "Fevrier", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
         function getDay(s) {
-            console.log(s);
             var d = new Date(s);
-            console.log(d)
             return days[d.getDay()] + " " + d.getDate() + " " + months[d.getMonth()] ;
         }
     </script>

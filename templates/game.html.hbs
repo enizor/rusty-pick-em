@@ -10,6 +10,12 @@
         var d = new Date(timestamp);
         return d.getHours() + ":00";
     }
+    const days = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+    const months = ["Janvier", "Fevrier", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+    function getDay(s) {
+        var d = new Date(s);
+        return days[d.getDay()] + " " + d.getDate() + " " + months[d.getMonth()] ;
+    }
 </script>
 
     <div style="max-width:768px;margin:auto">
@@ -22,8 +28,10 @@
         <br>
         <a href="/games?date={{day}}">Retour à la liste des matchs</a>
     </header>
-    <h1>Match</h1>
-
+    <h1 id="date">Matchs</h1>
+    <script>
+        document.getElementById("date").innerHTML = getDay("{{ day }}");
+    </script>
     <div class="game game_container {{#if game.bet.id}} has_bet {{else}} no_bet {{/if}}">
         <div id="game_time-{{game.id}}" class="date" style="border-bottom: 1px solid #e5e5e5;margin-bottom: .3em">
             <script>
