@@ -15,6 +15,7 @@ fn rocket() -> _ {
             routes![index, login, authUser, logout, games, games_with_date, postbet, game_detail, postresult],
         )
         .mount("/images", FileServer::from("/static/images"))
+        .mount("/static", FileServer::from("/static"))
         .attach(DbConn::fairing())
         .attach(Template::fairing())
 }

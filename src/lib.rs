@@ -36,7 +36,6 @@ pub fn establish_connection() -> SqliteConnection {
 
 pub fn get_session(given_token: &str, conn: &SqliteConnection) -> Result<User, AuthError> {
     use schema::users::dsl::*;
-    dbg!(given_token);
     if let Ok(user) = users.filter(token.eq(&given_token)).first::<User>(conn) {
         if user.token.is_some() && user.tokenExpireAt.is_some() {
             if user.token.as_ref().unwrap() == &given_token {
@@ -63,7 +62,6 @@ pub fn create_session(username: &str, conn: &SqliteConnection) -> Option<String>
     use schema::users::dsl::*;
     println!("{}", username);
     let new_token = format!("{:x}", rand::random::<u64>());
-    dbg!(&new_token);
     let user_updated = diesel::update(users.filter(name.eq(&username)))
         .set( (token.eq(&new_token),
             tokenExpireAt.eq(Utc::now().naive_utc().checked_add_signed(chrono::Duration::days(90)))))

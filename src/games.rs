@@ -11,7 +11,7 @@ use crate::schema;
 #[derive(Serialize)]
 pub struct GameDetails {
     pub id: i32,
-    pub time: NaiveDateTime,
+    pub time: i64,
     pub score1: i32,
     pub score2: i32,
     pub team1: Team,
@@ -85,7 +85,7 @@ impl Game {
 
         GameDetails {
             id: self.id,
-            time: self.time,
+            time: self.time.timestamp_millis(),
             score1: self.score1.unwrap_or(0),
             score2: self.score2.unwrap_or(0),
             team1: team1,

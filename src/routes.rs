@@ -79,6 +79,7 @@ pub struct GamesContext {
     flash: String,
     username: String,
     games: Vec<GameDetails>,
+    day: String,
 }
 
 #[derive(FromForm)]
@@ -94,7 +95,6 @@ pub async fn games_with_date(
 ) -> Result<Template, Flash<Redirect>> {
     if let Some(cookie) = cookies.get_private("token") {
         if let Ok(user) = conn.run(move |c|crate::get_session(cookie.value(), &c)).await {
-            dbg!(&date);
             let parsed_date = NaiveDate::parse_from_str(&date, "%Y-%m-%d").unwrap_or(Utc::today().naive_utc());
             let previous_date = parsed_date.checked_sub_signed(Duration::days(1)).unwrap();
             let new_date = conn.run(move |c| find_date(previous_date, &c)).await;
@@ -102,7 +102,6 @@ pub async fn games_with_date(
                 return Err(Flash::warning(
                     Redirect::to(format!("/games?date={}", new_date.format("%Y-%m-%d"))), "Vous avez été redirigé vers un jour avec des matchs"))
             }
-            dbg!(parsed_date);
             let userID = user.id;
             let context = GamesContext {
                 next_day: conn.run(move |c| next_date(parsed_date, &c)).await.map_or("".to_string(), |d| d.format("%Y-%m-%d").to_string()),
@@ -111,7 +110,8 @@ pub async fn games_with_date(
                     .map(|msg| msg.message().to_string())
                     .unwrap_or("".to_string()),
                 games: conn.run(move |c| upcoming_games(&c, parsed_date, userID)).await,
-                username: user.name
+                username: user.name,
+                day: parsed_date.format("%Y-%m-%d").to_string()
             };
             return Ok(Template::render("games", &context));
         }
@@ -150,7 +150,6 @@ pub struct PlaceBet {
 
 #[post("/games", data = "<bet>")]
 pub async fn postbet(bet: Form<PlaceBet>, conn: DbConn, cookies: &CookieJar<'_>) -> Flash<Redirect> {
-    dbg!(&bet);
     if let Some(cookie) = cookies.get_private("token") {
         if let Ok(user) = conn.run(move |c| crate::get_session(cookie.value(), &c)).await {
             // Update if exists
