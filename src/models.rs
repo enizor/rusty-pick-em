@@ -1,6 +1,6 @@
 extern crate chrono;
 
-use self::chrono::{NaiveDateTime};
+use self::chrono::NaiveDateTime;
 
 #[derive(Queryable)]
 pub struct Game {
@@ -10,7 +10,7 @@ pub struct Game {
     pub score2: Option<i32>,
     pub finished: bool,
     pub team1: Option<i32>,
-    pub team2: Option<i32>
+    pub team2: Option<i32>,
 }
 
 #[derive(Queryable, Serialize)]
@@ -21,6 +21,7 @@ pub struct Team {
     pub flag: String,
 }
 
+#[allow(non_snake_case)]
 #[derive(Queryable)]
 pub struct User {
     pub id: i32,
@@ -29,7 +30,7 @@ pub struct User {
     pub token: Option<String>,
     pub tokenExpireAt: Option<NaiveDateTime>,
     pub isAdmin: bool,
-    pub points: i32
+    pub points: i32,
 }
 
 #[derive(Queryable, Serialize)]
@@ -39,5 +40,5 @@ pub struct Bet {
     pub game_id: i32,
     pub score1: i32,
     pub score2: i32,
-    pub points: i32
+    pub points: i32,
 }
