@@ -197,7 +197,7 @@ pub fn prev_date(date: &NaiveDate, conn: &SqliteConnection) -> Option<NaiveDate>
     use schema::games::dsl::{games, time};
     games
         .select(time)
-        .filter(sql(&format!("date(time) < '{}'", date.format("%Y-%m-%d"))))
+        .filter(sql(&format!("date(time) <= '{}'", date.format("%Y-%m-%d"))))
         .order(time.desc())
         .limit(1)
         .first::<NaiveDateTime>(conn)
