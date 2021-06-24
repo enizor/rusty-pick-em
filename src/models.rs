@@ -1,6 +1,4 @@
-extern crate chrono;
-
-use self::chrono::NaiveDateTime;
+use chrono::NaiveDateTime;
 
 #[derive(Queryable)]
 pub struct Game {

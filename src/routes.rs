@@ -184,6 +184,8 @@ pub async fn postbet(
             use schema::games::dsl::*;
             #[allow(non_snake_case)]
             let game_ID = bet.game_id;
+            #[allow(non_snake_case)]
+            let user_ID = dbg!(user.id);
             let bet_score1 = bet.score1;
             let bet_score2 = bet.score2;
 
@@ -200,7 +202,7 @@ pub async fn postbet(
                 use schema::bets::dsl::*;
                 let result = conn
                     .run(move |c| {
-                        diesel::update(bets.filter(game_id.eq(game_id)).filter(user_id.eq(user_id)))
+                        diesel::update(bets.filter(game_id.eq(game_ID)).filter(user_id.eq(user_ID)))
                             .set((score1.eq(bet_score1), score2.eq(bet_score2)))
                             .execute(c)
                     })
@@ -211,7 +213,7 @@ pub async fn postbet(
                     conn.run(move |c| {
                         diesel::insert_into(bets)
                             .values((
-                                user_id.eq(user.id),
+                                user_id.eq(user_ID),
                                 game_id.eq(game_ID),
                                 score1.eq(bet_score1),
                                 score2.eq(bet_score2),
@@ -219,7 +221,7 @@ pub async fn postbet(
                             .execute(c)
                     })
                     .await
-                    .expect("Error saving new post");
+                    .expect("Error saving new bet");
                 }
                 return Flash::success(
                     Redirect::to(format!("/game/{}", game_ID)),
